@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
@@ -42,7 +42,7 @@ _STATUS_POR_ERRO: list[tuple[type[ErroGrafo], int]] = [
 ]
 
 
-def criar_app(servico: ServicoRastro | None = None, url_banco: str | None = None) -> FastAPI:
+def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] = None) -> FastAPI:
     @asynccontextmanager
     async def ciclo_de_vida(app: FastAPI):
         s = servico or ServicoRastro(Repositorio(criar_engine(url_banco)))
@@ -109,8 +109,8 @@ def criar_app(servico: ServicoRastro | None = None, url_banco: str | None = None
 
     @app.get("/api/vertices", response_model=list[e.VerticeOut], tags=["lotes"])
     def listar_vertices(
-        tipo: TipoVertice | None = None,
-        q: str | None = Query(default=None, description="Busca no código, nome, fornecedor ou cidade"),
+        tipo: Optional[TipoVertice] = None,
+        q: Optional[str] = Query(default=None, description="Busca no código, nome, fornecedor ou cidade"),
         limite: int = Query(default=50, ge=1, le=500),
         servico: ServicoRastro = Servico,
     ):

@@ -11,7 +11,7 @@ reconstrói o grafo em memória (ver Repositorio.carregar_grafo).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import (
     JSON,
@@ -46,8 +46,8 @@ class EventoDB(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tipo: Mapped[str] = mapped_column(String(20), nullable=False)
     ocorrido_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text)
-    responsavel: Mapped[str | None] = mapped_column(String(120))
+    descricao: Mapped[Optional[str]] = mapped_column(Text)
+    responsavel: Mapped[Optional[str]] = mapped_column(String(120))
 
     __table_args__ = (
         CheckConstraint(f"tipo IN ({_valores(TipoEvento)})", name="ck_eventos_tipo"),
@@ -61,11 +61,11 @@ class VerticeDB(Base):
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
     tipo: Mapped[str] = mapped_column(String(20), nullable=False)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
-    quantidade: Mapped[float | None] = mapped_column(Float)
-    unidade: Mapped[str | None] = mapped_column(String(20))
+    quantidade: Mapped[Optional[float]] = mapped_column(Float)
+    unidade: Mapped[Optional[str]] = mapped_column(String(20))
     atributos: Mapped[dict[str, Any]] = mapped_column(JSONVariante, nullable=False, default=dict)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    evento_id: Mapped[int | None] = mapped_column(ForeignKey("eventos.id"))
+    evento_id: Mapped[Optional[int]] = mapped_column(ForeignKey("eventos.id"))
 
     __table_args__ = (
         CheckConstraint(f"tipo IN ({_valores(TipoVertice)})", name="ck_vertices_tipo"),
@@ -79,8 +79,8 @@ class ArestaDB(Base):
     origem: Mapped[str] = mapped_column(ForeignKey("vertices.id"), primary_key=True)
     destino: Mapped[str] = mapped_column(ForeignKey("vertices.id"), primary_key=True)
     tipo: Mapped[str] = mapped_column(String(20), nullable=False)
-    quantidade: Mapped[float | None] = mapped_column(Float)
-    evento_id: Mapped[int | None] = mapped_column(ForeignKey("eventos.id"))
+    quantidade: Mapped[Optional[float]] = mapped_column(Float)
+    evento_id: Mapped[Optional[int]] = mapped_column(ForeignKey("eventos.id"))
 
     __table_args__ = (
         CheckConstraint(f"tipo IN ({_valores(TipoAresta)})", name="ck_arestas_tipo"),

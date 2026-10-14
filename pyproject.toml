@@ -7,7 +7,7 @@ name = "rastro"
 version = "0.3.0"
 description = "Rastro — Sistema de Rastreabilidade de Lotes Agroindustriais (DAG dinâmico)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 authors = [{ name = "Gabriel Henrique Kuhn Paz" }]
 dependencies = [
     "fastapi>=0.115",

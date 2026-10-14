@@ -10,7 +10,7 @@ O Rastro registra a cadeia produtiva de uma agroindústria como um **grafo acíc
 
 ## Como rodar
 
-Requer Python 3.11+.
+Requer Python 3.9 ou mais novo (o Python que já vem no macOS serve).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate

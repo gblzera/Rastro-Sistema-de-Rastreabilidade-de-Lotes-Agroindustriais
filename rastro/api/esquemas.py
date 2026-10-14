@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,63 +17,63 @@ class _Base(BaseModel):
 
 
 class _Registro(_Base):
-    ocorrido_em: datetime | None = Field(default=None, description="Padrão: agora")
-    responsavel: str | None = Field(default=None, max_length=120)
-    descricao: str | None = Field(default=None, max_length=500)
+    ocorrido_em: Optional[datetime] = Field(default=None, description="Padrão: agora")
+    responsavel: Optional[str] = Field(default=None, max_length=120)
+    descricao: Optional[str] = Field(default=None, max_length=500)
 
 
 class InsumoIn(_Registro):
-    id: str | None = Field(default=None, description="Código do lote; gerado se omitido (INS-000001)")
+    id: Optional[str] = Field(default=None, description="Código do lote; gerado se omitido (INS-000001)")
     nome: str = Field(min_length=1, max_length=200, examples=["Leite cru"])
-    quantidade: float | None = Quantidade
-    unidade: str | None = Field(default=None, max_length=20, examples=["L"])
-    fornecedor: str | None = Field(default=None, max_length=200)
+    quantidade: Optional[float] = Quantidade
+    unidade: Optional[str] = Field(default=None, max_length=20, examples=["L"])
+    fornecedor: Optional[str] = Field(default=None, max_length=200)
     atributos: dict[str, Any] = Field(default_factory=dict)
 
 
 class DestinoIn(_Registro):
-    id: str | None = None
+    id: Optional[str] = None
     nome: str = Field(min_length=1, max_length=200, examples=["Supermercado Central"])
-    cidade: str | None = Field(default=None, max_length=120, examples=["Asa Norte/DF"])
+    cidade: Optional[str] = Field(default=None, max_length=120, examples=["Asa Norte/DF"])
     atributos: dict[str, Any] = Field(default_factory=dict)
 
 
 class EntradaIn(_Base):
     lote: str = Field(min_length=1, max_length=40)
-    quantidade: float | None = Quantidade
+    quantidade: Optional[float] = Quantidade
 
 
 class ProducaoIn(_Registro):
     entradas: list[EntradaIn] = Field(min_length=1)
     tipo: Literal["intermediario", "produto_final"]
-    id: str | None = None
+    id: Optional[str] = None
     nome: str = Field(min_length=1, max_length=200, examples=["Queijo minas frescal"])
-    quantidade: float | None = Quantidade
-    unidade: str | None = Field(default=None, max_length=20)
+    quantidade: Optional[float] = Quantidade
+    unidade: Optional[str] = Field(default=None, max_length=20)
     atributos: dict[str, Any] = Field(default_factory=dict)
 
 
 class ExpedicaoIn(_Registro):
     lote: str = Field(min_length=1, max_length=40)
     destino: str = Field(min_length=1, max_length=40)
-    quantidade: float | None = Quantidade
+    quantidade: Optional[float] = Quantidade
 
 
 class VinculoIn(_Registro):
     origem: str = Field(min_length=1, max_length=40)
     destino: str = Field(min_length=1, max_length=40)
-    quantidade: float | None = Quantidade
+    quantidade: Optional[float] = Quantidade
 
 
 class VerticeOut(BaseModel):
     id: str
     tipo: TipoVertice
     nome: str
-    quantidade: float | None
-    unidade: str | None
+    quantidade: Optional[float]
+    unidade: Optional[str]
     atributos: dict[str, Any]
     criado_em: datetime
-    evento_id: int | None
+    evento_id: Optional[int]
     grau_entrada: int
     grau_saida: int
 
@@ -82,8 +82,8 @@ class ArestaOut(BaseModel):
     origem: str
     destino: str
     tipo: TipoAresta
-    quantidade: float | None
-    evento_id: int | None
+    quantidade: Optional[float]
+    evento_id: Optional[int]
 
 
 class VerticeDetalheOut(VerticeOut):
@@ -95,8 +95,8 @@ class EventoOut(BaseModel):
     id: int
     tipo: str
     ocorrido_em: datetime
-    descricao: str | None
-    responsavel: str | None
+    descricao: Optional[str]
+    responsavel: Optional[str]
 
 
 class ProducaoOut(BaseModel):

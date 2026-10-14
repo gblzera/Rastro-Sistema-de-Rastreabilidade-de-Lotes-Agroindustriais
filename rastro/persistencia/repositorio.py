@@ -234,6 +234,7 @@ def _aresta_para_linha(aresta: Aresta) -> dict:
 
 
 def _ajustar_sequencia_eventos(sessao: Session) -> None:
+    """Acertos depois de uma carga em massa."""
     # Os ids dos eventos foram inseridos explicitamente; no PostgreSQL a sequence do SERIAL
     # precisa continuar a partir deles (no SQLite o autoincremento já faz isso).
     if sessao.get_bind().dialect.name == "postgresql":
@@ -243,6 +244,9 @@ def _ajustar_sequencia_eventos(sessao: Session) -> None:
                 "COALESCE((SELECT MAX(id) FROM eventos), 0) + 1, false)"
             )
         )
+    # Sem estatísticas atualizadas o planejador pode ignorar os índices nas consultas recursivas.
+    for tabela in ("eventos", "vertices", "arestas"):
+        sessao.execute(text(f"ANALYZE {tabela}"))
 
 
 def _utc(momento: datetime) -> datetime:

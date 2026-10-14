@@ -1,0 +1,13 @@
+# Blueprint do Render (plano gratuito). O banco recomendado é um PostgreSQL gratuito do Neon:
+# crie o projeto em neon.tech e cole a connection string em DATABASE_URL no painel do Render.
+services:
+  - type: web
+    name: rastro
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/saude
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: RASTRO_SEED_SE_VAZIO
+        value: "300"

@@ -28,6 +28,7 @@ from ..grafo import (
 )
 from ..persistencia import Repositorio, criar_engine, descrever
 from ..servico import EntradaProducao, ServicoRastro
+from ..sintetico import gerar_base
 from . import esquemas as e
 
 PASTA_WEB = Path(os.environ.get("RASTRO_WEB_DIR", Path(__file__).resolve().parents[2] / "web"))
@@ -45,6 +46,12 @@ def criar_app(servico: ServicoRastro | None = None, url_banco: str | None = None
     @asynccontextmanager
     async def ciclo_de_vida(app: FastAPI):
         s = servico or ServicoRastro(Repositorio(criar_engine(url_banco)))
+        # Em ambientes de demonstração (deploy), popula um banco vazio com a base sintética.
+        semear = int(os.environ.get("RASTRO_SEED_SE_VAZIO") or 0)
+        if semear:
+            s.repo.criar_esquema()
+            if s.repo.esta_vazio():
+                s.repo.inserir_base(gerar_base(semear))
         s.iniciar()
         app.state.servico = s
         yield

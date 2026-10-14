@@ -162,6 +162,15 @@ def test_eventos_registram_o_que_cada_operacao_criou(cliente):
     assert {a["origem"] for a in producao_queijo["arestas"]} == {c["pasteurizado"]["id"], c["sal"]["id"]}
 
 
+def test_semeia_banco_vazio_quando_configurado(url_banco, monkeypatch):
+    monkeypatch.setenv("RASTRO_SEED_SE_VAZIO", "120")
+    with TestClient(criar_app(url_banco=url_banco)) as cliente:
+        assert cliente.get("/api/estatisticas").json()["vertices"] == 132
+    # não semeia de novo um banco que já tem dados
+    with TestClient(criar_app(url_banco=url_banco)) as cliente:
+        assert cliente.get("/api/estatisticas").json()["vertices"] == 132
+
+
 def test_interface_web_e_servida(cliente):
     resposta = cliente.get("/")
     assert resposta.status_code == 200

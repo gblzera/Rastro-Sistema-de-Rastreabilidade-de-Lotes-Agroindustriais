@@ -1,0 +1,29 @@
+# Sobe o Rastro com PostgreSQL:  docker compose up --build
+# Interface em http://localhost:8000 (o banco vazio é populado com 300 lotes sintéticos).
+services:
+  banco:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rastro
+      POSTGRES_PASSWORD: rastro
+      POSTGRES_DB: rastro
+    volumes:
+      - dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rastro"]
+      interval: 2s
+      retries: 20
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://rastro:rastro@banco:5432/rastro
+      RASTRO_SEED_SE_VAZIO: "300"
+    ports:
+      - "8000:8000"
+    depends_on:
+      banco:
+        condition: service_healthy
+
+volumes:
+  dados:

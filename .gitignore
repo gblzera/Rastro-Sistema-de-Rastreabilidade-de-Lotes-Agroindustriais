@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/
+
+# Bancos locais e saídas geradas
+*.db
+*.db-journal
+*.sqlite3
+resultados/
+
+# Ambiente
+.env
+.DS_Store
+.idea/
+.vscode/

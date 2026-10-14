@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Rastro</title>
+  <meta name="description" content="Rastreabilidade de lotes agroindustriais modelada como um grafo acíclico dirigido.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%232d6a45' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 8l10 8M6 24l10-8M16 16h10'/%3E%3C/g%3E%3Cg fill='%232d6a45'%3E%3Ccircle cx='6' cy='8' r='4'/%3E%3Ccircle cx='6' cy='24' r='4'/%3E%3Ccircle cx='16' cy='16' r='4'/%3E%3Ccircle cx='26' cy='16' r='4'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <g fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round">
+          <path d="M6 8l10 8M6 24l10-8M16 16h10"/>
+        </g>
+        <circle cx="6" cy="8" r="3.6" fill="var(--c-insumo)"/>
+        <circle cx="6" cy="24" r="3.6" fill="var(--c-insumo)"/>
+        <circle cx="16" cy="16" r="3.6" fill="var(--c-intermediario)"/>
+        <circle cx="26" cy="16" r="3.6" fill="var(--c-produto)"/>
+      </svg>
+      <div>
+        <h1>Rastro</h1>
+        <p>Rastreabilidade de lotes agroindustriais</p>
+      </div>
+    </div>
+    <dl class="indicadores" id="indicadores">
+      <div><dt>Lotes</dt><dd id="ind-lotes">–</dd></div>
+      <div><dt>Destinos</dt><dd id="ind-destinos">–</dd></div>
+      <div><dt>Arestas</dt><dd id="ind-arestas">–</dd></div>
+      <div><dt>Cadeia mais longa</dt><dd id="ind-profundidade">–</dd></div>
+      <div><dt>Banco</dt><dd id="ind-banco">–</dd></div>
+    </dl>
+  </header>
+
+  <main class="app">
+    <section class="painel" aria-label="Operações">
+      <nav class="abas" role="tablist">
+        <button role="tab" id="aba-consultar" aria-selected="true" aria-controls="painel-consultar">Consultar</button>
+        <button role="tab" id="aba-registrar" aria-selected="false" aria-controls="painel-registrar">Registrar</button>
+        <button role="tab" id="aba-eventos" aria-selected="false" aria-controls="painel-eventos">Eventos</button>
+      </nav>
+
+      <!-- Consultar -->
+      <div class="conteudo-aba" id="painel-consultar" role="tabpanel" aria-labelledby="aba-consultar">
+        <form id="form-consulta" autocomplete="off">
+          <h2>Recall e auditoria de origem</h2>
+          <p class="ajuda">Recall mostra tudo o que foi produzido a partir de um lote e para onde foi enviado. Origem reconstrói a cadeia de insumos de um lote.</p>
+          <div class="campo">
+            <label for="consulta-lote">Lote ou destino</label>
+            <input id="consulta-lote" list="lista-vertices" placeholder="INS-000001, queijo, Formosa…" required>
+          </div>
+          <div class="botoes">
+            <button class="btn btn-recall" type="submit" data-tipo="recall">Recall</button>
+            <button class="btn btn-origem" type="submit" data-tipo="origem">Origem</button>
+          </div>
+        </form>
+        <div id="resultado" class="resultado">
+          <p class="vazio">Escolha um lote na rede ou digite um código. Exemplo: o primeiro lote de leite cru, <button class="btn-link" type="button" id="exemplo-recall">INS-000001</button>.</p>
+        </div>
+      </div>
+
+      <!-- Registrar -->
+      <div class="conteudo-aba" id="painel-registrar" role="tabpanel" aria-labelledby="aba-registrar" hidden>
+        <div class="segmentos" role="group" aria-label="Tipo de registro">
+          <button type="button" data-form="form-insumo" aria-pressed="true">Insumo</button>
+          <button type="button" data-form="form-producao" aria-pressed="false">Produção</button>
+          <button type="button" data-form="form-expedicao" aria-pressed="false">Expedição</button>
+          <button type="button" data-form="form-destino" aria-pressed="false">Destino</button>
+          <button type="button" data-form="form-vinculo" aria-pressed="false">Vínculo</button>
+        </div>
+
+        <form id="form-insumo" class="form-registro" autocomplete="off">
+          <h2>Recebimento de insumo</h2>
+          <p class="ajuda">Um lote de matéria-prima que chega do fornecedor e abre a cadeia.</p>
+          <div class="campo">
+            <label for="insumo-nome">Matéria-prima</label>
+            <input id="insumo-nome" name="nome" list="lista-materias" placeholder="Leite cru" required>
+          </div>
+          <div class="linha">
+            <div class="campo"><label for="insumo-quantidade">Quantidade</label><input id="insumo-quantidade" name="quantidade" type="number" min="0" step="any" placeholder="5000"></div>
+            <div class="campo"><label for="insumo-unidade">Unidade</label><input id="insumo-unidade" name="unidade" placeholder="L"></div>
+          </div>
+          <div class="campo"><label for="insumo-fornecedor">Fornecedor</label><input id="insumo-fornecedor" name="fornecedor" placeholder="Fazenda Santa Luzia — Formosa/GO"></div>
+          <div class="campo"><label for="insumo-id">Código do lote (opcional)</label><input id="insumo-id" name="id" placeholder="gerado automaticamente"></div>
+          <div class="botoes"><button class="btn btn-primario" type="submit">Registrar insumo</button></div>
+        </form>
+
+        <form id="form-producao" class="form-registro" autocomplete="off" hidden>
+          <h2>Evento de produção</h2>
+          <p class="ajuda">Uma transformação: os lotes de entrada viram um novo lote. Cada entrada vira uma aresta no grafo.</p>
+          <div class="linha">
+            <div class="campo">
+              <label for="producao-tipo">Lote produzido</label>
+              <select id="producao-tipo" name="tipo">
+                <option value="intermediario">Intermediário</option>
+                <option value="produto_final">Produto final</option>
+              </select>
+            </div>
+            <div class="campo"><label for="producao-nome">Produto</label><input id="producao-nome" name="nome" list="lista-produtos" placeholder="Leite pasteurizado" required></div>
+          </div>
+          <div class="linha">
+            <div class="campo"><label for="producao-quantidade">Quantidade</label><input id="producao-quantidade" name="quantidade" type="number" min="0" step="any"></div>
+            <div class="campo"><label for="producao-unidade">Unidade</label><input id="producao-unidade" name="unidade" placeholder="kg"></div>
+          </div>
+          <div class="grupo">
+            <span class="rotulo">Lotes de entrada</span>
+            <div class="entradas" id="entradas"></div>
+            <div><button class="btn-link" type="button" id="adicionar-entrada">+ Adicionar entrada</button></div>
+          </div>
+          <div class="botoes"><button class="btn btn-primario" type="submit">Registrar produção</button></div>
+        </form>
+
+        <form id="form-expedicao" class="form-registro" autocomplete="off" hidden>
+          <h2>Expedição</h2>
+          <p class="ajuda">Envio de um lote a um cliente. É o que permite saber quem notificar em um recall.</p>
+          <div class="campo"><label for="expedicao-lote">Lote</label><input id="expedicao-lote" name="lote" list="lista-vertices" placeholder="PRD-000001" required></div>
+          <div class="campo"><label for="expedicao-destino">Destino</label><input id="expedicao-destino" name="destino" list="lista-destinos" placeholder="DST-000001" required></div>
+          <div class="campo"><label for="expedicao-quantidade">Quantidade</label><input id="expedicao-quantidade" name="quantidade" type="number" min="0" step="any"></div>
+          <div class="botoes"><button class="btn btn-primario" type="submit">Registrar expedição</button></div>
+        </form>
+
+        <form id="form-destino" class="form-registro" autocomplete="off" hidden>
+          <h2>Novo destino</h2>
+          <p class="ajuda">Cliente, distribuidor ou ponto de venda que recebe lotes.</p>
+          <div class="campo"><label for="destino-nome">Nome</label><input id="destino-nome" name="nome" placeholder="Supermercado Central" required></div>
+          <div class="campo"><label for="destino-cidade">Cidade</label><input id="destino-cidade" name="cidade" placeholder="Asa Norte/DF"></div>
+          <div class="campo"><label for="destino-id">Código (opcional)</label><input id="destino-id" name="id" placeholder="gerado automaticamente"></div>
+          <div class="botoes"><button class="btn btn-primario" type="submit">Cadastrar destino</button></div>
+        </form>
+
+        <form id="form-vinculo" class="form-registro" autocomplete="off" hidden>
+          <h2>Vínculo entre lotes existentes</h2>
+          <p class="ajuda">Registra que um lote também compôs outro já existente, como numa correção de apontamento. O sistema recusa o vínculo se ele fizer um lote virar ancestral de si mesmo.</p>
+          <div class="campo"><label for="vinculo-origem">Lote que foi consumido</label><input id="vinculo-origem" name="origem" list="lista-vertices" required></div>
+          <div class="campo"><label for="vinculo-destino">Lote que o consumiu</label><input id="vinculo-destino" name="destino" list="lista-vertices" required></div>
+          <div class="campo"><label for="vinculo-quantidade">Quantidade</label><input id="vinculo-quantidade" name="quantidade" type="number" min="0" step="any"></div>
+          <div class="botoes"><button class="btn btn-primario" type="submit">Registrar vínculo</button></div>
+        </form>
+
+        <div id="retorno-registro" aria-live="polite"></div>
+      </div>
+
+      <!-- Eventos -->
+      <div class="conteudo-aba" id="painel-eventos" role="tabpanel" aria-labelledby="aba-eventos" hidden>
+        <div>
+          <h2>Últimos eventos</h2>
+          <p class="ajuda">Cada registro gera um evento com os vértices e arestas que criou.</p>
+        </div>
+        <ul class="eventos" id="lista-eventos"></ul>
+      </div>
+    </section>
+
+    <section class="palco" aria-label="Rede da cadeia produtiva">
+      <div id="rede"></div>
+      <div class="barra-rede">
+        <div class="busca">
+          <label class="rotulo" for="busca-rede" hidden>Localizar na rede</label>
+          <input id="busca-rede" list="lista-vertices" placeholder="Localizar lote na rede" autocomplete="off">
+        </div>
+        <button class="btn" type="button" id="btn-isolar" hidden>Isolar subgrafo</button>
+        <button class="btn" type="button" id="btn-limpar" hidden>Limpar destaque</button>
+        <button class="btn" type="button" id="btn-ajustar">Enquadrar</button>
+      </div>
+      <div class="faixa-estado" id="faixa-estado" hidden></div>
+      <div class="legenda" aria-label="Legenda">
+        <span class="t-insumo"><i></i>Insumo</span>
+        <span class="t-intermediario"><i></i>Intermediário</span>
+        <span class="t-produto_final"><i></i>Produto final</span>
+        <span class="t-destino"><i></i>Destino</span>
+        <span><i class="tracejado"></i>Expedição</span>
+      </div>
+      <aside class="detalhe" id="detalhe" hidden aria-live="polite"></aside>
+    </section>
+  </main>
+
+  <datalist id="lista-vertices"></datalist>
+  <datalist id="lista-destinos"></datalist>
+  <datalist id="lista-materias">
+    <option value="Leite cru"></option><option value="Trigo em grão"></option><option value="Soja em grão"></option>
+    <option value="Milho em grão"></option><option value="Morango"></option><option value="Cacau em pó"></option>
+    <option value="Açúcar cristal"></option><option value="Sal refinado"></option><option value="Fermento biológico"></option>
+    <option value="Embalagem plástica"></option><option value="Embalagem cartonada"></option><option value="Saco de ráfia"></option>
+  </datalist>
+  <datalist id="lista-produtos">
+    <option value="Leite pasteurizado"></option><option value="Creme de leite"></option><option value="Farinha de trigo"></option>
+    <option value="Fubá"></option><option value="Farelo de soja"></option><option value="Óleo de soja"></option>
+    <option value="Polpa de morango"></option><option value="Massa base"></option><option value="Queijo minas frescal"></option>
+    <option value="Iogurte de morango"></option><option value="Manteiga"></option><option value="Achocolatado"></option>
+    <option value="Pão de forma"></option><option value="Biscoito de milho"></option><option value="Ração para aves"></option>
+  </datalist>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="vendor/cytoscape.min.js"></script>
+  <script src="vendor/dagre.min.js"></script>
+  <script src="vendor/cytoscape-dagre.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

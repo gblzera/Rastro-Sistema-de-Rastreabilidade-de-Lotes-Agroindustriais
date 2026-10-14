@@ -162,6 +162,23 @@ def test_eventos_registram_o_que_cada_operacao_criou(cliente):
     assert {a["origem"] for a in producao_queijo["arestas"]} == {c["pasteurizado"]["id"], c["sal"]["id"]}
 
 
+def test_exemplos_apontam_para_lotes_uteis(cliente):
+    assert cliente.get("/api/exemplos").json() == {
+        "recall": None, "recall_produtos": 0, "origem": None, "ciclo": None,
+    }
+    c = _cadeia_basica(cliente)
+    ex = cliente.get("/api/exemplos").json()
+    assert ex["recall"]["id"] == c["leite"]["id"] and ex["recall_produtos"] == 1
+    assert ex["origem"]["id"] == c["queijo"]["id"]
+    assert ex["ciclo"] == {
+        "origem": {"id": c["queijo"]["id"], "nome": "Queijo minas frescal", "extra": None},
+        "destino": {"id": c["pasteurizado"]["id"], "nome": "Leite pasteurizado", "extra": None},
+    }
+    # o vínculo sugerido realmente fecha um ciclo
+    r = cliente.post("/api/vinculos", json={"origem": ex["ciclo"]["origem"]["id"], "destino": ex["ciclo"]["destino"]["id"]})
+    assert r.status_code == 409
+
+
 def test_semeia_banco_vazio_quando_configurado(url_banco, monkeypatch):
     monkeypatch.setenv("RASTRO_SEED_SE_VAZIO", "120")
     with TestClient(criar_app(url_banco=url_banco)) as cliente:

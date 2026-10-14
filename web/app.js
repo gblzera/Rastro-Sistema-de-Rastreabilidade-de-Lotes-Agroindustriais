@@ -110,17 +110,20 @@ function estiloRede() {
     produto_final: cor("--c-produto"),
     destino: cor("--c-destino"),
     ink: cor("--ink"),
+    ink2: cor("--ink-2"),
+    ink3: cor("--ink-3"),
     aresta: cor("--c-aresta"),
     recall: cor("--c-recall"),
     origem: cor("--c-origem"),
     bg: cor("--bg"),
   };
+  // A ordem importa: no Cytoscape, uma regra posterior sobrescreve as anteriores.
   return [
     {
       selector: "node",
       style: {
-        "background-color": (n) => c[n.data("tipo")],
-        shape: (n) => FORMA[n.data("tipo")],
+        "background-color": (n) => c[n.data("tipo")] || c.bg,
+        shape: (n) => FORMA[n.data("tipo")] || "rectangle",
         width: 22,
         height: 15,
         label: "data(id)",
@@ -138,10 +141,45 @@ function estiloRede() {
       },
     },
     { selector: 'node[tipo = "destino"]', style: { width: 26, height: 22 } },
+    // subgrafos pequenos (consultas, vizinhança): nós maiores com código e nome
+    {
+      selector: "node.detalhado",
+      style: {
+        width: 30,
+        height: 20,
+        label: "data(rotulo2)",
+        "text-wrap": "wrap",
+        "text-max-width": 140,
+        "font-size": 10,
+        "text-margin-y": 4,
+        "min-zoomed-font-size": 0,
+      },
+    },
+    { selector: 'node.detalhado[tipo = "destino"]', style: { width: 32, height: 26 } },
+    {
+      selector: "node.rotulo-coluna",
+      style: {
+        "background-opacity": 0,
+        "border-width": 0,
+        width: 1,
+        height: 1,
+        label: "data(rotulo)",
+        "text-valign": "center",
+        "font-family": "Barlow Semi Condensed, Arial Narrow, sans-serif",
+        "font-size": 15,
+        "font-weight": 600,
+        color: c.ink3,
+        "text-transform": "uppercase",
+        "text-background-opacity": 0,
+        "min-zoomed-font-size": 0,
+        events: "no",
+      },
+    },
     {
       selector: "edge",
       style: {
         width: 1,
+        opacity: 0.5,
         "line-color": c.aresta,
         "target-arrow-color": c.aresta,
         "target-arrow-shape": "triangle",
@@ -150,18 +188,21 @@ function estiloRede() {
       },
     },
     { selector: 'edge[tipo = "expedicao"]', style: { "line-style": "dashed" } },
-    { selector: ".apagado", style: { opacity: 0.1 } },
-    { selector: "node.realce-recall", style: { "border-width": 2, "border-color": c.recall } },
-    { selector: "edge.realce-recall", style: { width: 2, "line-color": c.recall, "target-arrow-color": c.recall } },
-    { selector: "node.realce-origem", style: { "border-width": 2, "border-color": c.origem } },
-    { selector: "edge.realce-origem", style: { width: 2, "line-color": c.origem, "target-arrow-color": c.origem } },
-    { selector: "node.raiz", style: { width: 32, height: 24, "border-width": 4, "font-size": 10, "font-weight": "bold" } },
+    { selector: ".apagado", style: { opacity: 0.08 } },
+    { selector: "node.realce-recall", style: { "border-width": 2.5, "border-color": c.recall } },
+    { selector: "edge.realce-recall", style: { width: 2.2, opacity: 1, "line-color": c.recall, "target-arrow-color": c.recall } },
+    { selector: "node.realce-origem", style: { "border-width": 2.5, "border-color": c.origem } },
+    { selector: "edge.realce-origem", style: { width: 2.2, opacity: 1, "line-color": c.origem, "target-arrow-color": c.origem } },
+    { selector: "node.raiz", style: { width: 34, height: 26, "border-width": 4, "font-weight": "bold" } },
+    // níveis da BFS que ainda não "acenderam" na animação
+    { selector: ".pendente", style: { opacity: 0.12 } },
     { selector: "node.ciclo", style: { "border-width": 3, "border-style": "dashed", "border-color": c.recall } },
-    { selector: "edge.ciclo", style: { width: 3, "line-color": c.recall, "target-arrow-color": c.recall } },
+    { selector: "edge.ciclo", style: { width: 3, opacity: 1, "line-color": c.recall, "target-arrow-color": c.recall } },
     {
       selector: "edge.tentativa",
       style: {
         width: 3,
+        opacity: 1,
         "line-style": "dashed",
         "line-color": c.recall,
         "target-arrow-color": c.recall,
@@ -175,6 +216,12 @@ function estiloRede() {
         "text-background-opacity": 1,
       },
     },
+    // foco ao passar o mouse: o lote, seus vizinhos diretos e as arestas entre eles
+    { selector: ".hover-apagado", style: { opacity: 0.07 } },
+    { selector: ".hover-vizinho", style: { opacity: 1 } },
+    { selector: "edge.hover-aresta", style: { width: 2, "line-color": c.ink2, "target-arrow-color": c.ink2 } },
+    { selector: "node.hover-foco", style: { "border-width": 3, "border-color": c.ink } },
+    { selector: "node.rotulo-coluna", style: { opacity: 1 } },
     { selector: "node:selected", style: { "overlay-color": c.ink, "overlay-opacity": 0.18, "overlay-padding": 5 } },
   ];
 }
@@ -191,6 +238,9 @@ function iniciarRede() {
   estado.cy.on("tap", (evento) => {
     if (evento.target === estado.cy) fecharDetalhe();
   });
+  estado.cy.on("mouseover", "node.no", (evento) => focarHover(evento.target));
+  estado.cy.on("mouseout", "node.no", limparHover);
+  estado.cy.on("viewport", () => ($("#dica-rede").hidden = true));
   const atualizarEstilo = () => estado.cy.style(estiloRede());
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", atualizarEstilo);
   new MutationObserver(atualizarEstilo).observe(document.documentElement, {
@@ -199,9 +249,13 @@ function iniciarRede() {
   });
 }
 
-function elementos(vertices, arestas) {
+function elementos(vertices, arestas, detalhado) {
   return [
-    ...vertices.map((v) => ({ group: "nodes", data: { id: v.id, tipo: v.tipo, nome: v.nome, criado: v.criado_em } })),
+    ...vertices.map((v) => ({
+      group: "nodes",
+      classes: detalhado ? "no detalhado" : "no",
+      data: { id: v.id, tipo: v.tipo, nome: v.nome, extra: extraDe(v), rotulo2: `${v.id}\n${v.nome}` },
+    })),
     ...arestas.map((a) => ({
       group: "edges",
       data: { id: `${a.origem}->${a.destino}`, source: a.origem, target: a.destino, tipo: a.tipo },
@@ -214,15 +268,61 @@ const LIMITE_DAGRE = 120;
 
 function desenhar(vertices, arestas) {
   const cy = estado.cy;
+  const visaoGeral = vertices.length > LIMITE_DAGRE;
+  const blocos = visaoGeral ? posicoesEmBlocos(vertices, arestas) : null;
+  limparHover();
   cy.batch(() => {
     cy.elements().remove();
-    cy.add(elementos(vertices, arestas));
+    cy.add(elementos(vertices, arestas, !visaoGeral));
+    if (blocos) {
+      cy.add(blocos.rotulos.map((r) => ({
+        group: "nodes", classes: "rotulo-coluna", data: { id: r.id, rotulo: r.texto },
+        position: { x: r.x, y: r.y }, selectable: false, grabbable: false,
+      })));
+    }
   });
-  if (vertices.length > LIMITE_DAGRE) {
-    cy.layout({ name: "preset", positions: posicoesEmBlocos(vertices, arestas), fit: true, padding: 30, animate: false }).run();
+  if (blocos) {
+    cy.layout({ name: "preset", positions: blocos.posicoes, fit: false, animate: false }).run();
   } else {
-    cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 22, edgeSep: 6, rankSep: 140, fit: true, padding: 40, animate: false }).run();
+    cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 34, edgeSep: 8, rankSep: 170, fit: false, animate: false }).run();
   }
+  enquadrar(cy.elements(), { zoomMaximo: 1.5, animar: false });
+}
+
+function focarHover(no) {
+  const cy = estado.cy;
+  cy.batch(() => {
+    no.addClass("hover-foco");
+    // explorando a rede, acende só o lote e seus vizinhos; com uma consulta na tela, não mexe nela
+    if (!estado.consulta) {
+      const vizinhanca = no.closedNeighborhood();
+      cy.elements().not(vizinhanca).not(".rotulo-coluna").addClass("hover-apagado");
+      vizinhanca.addClass("hover-vizinho");
+      vizinhanca.edges().addClass("hover-aresta");
+    }
+  });
+  const d = no.data();
+  const qtd = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+  const dica = $("#dica-rede");
+  dica.replaceChildren(
+    ...[
+      h("span", { class: "pilula" }, NOME_TIPO[d.tipo]),
+      h("strong", {}, etiqueta(d.id, d.tipo), " ", d.nome),
+      d.extra ? h("span", {}, d.extra) : null,
+      h("span", { class: "sub" },
+        `${qtd(no.indegree(false), "entrada", "entradas")} e ${qtd(no.outdegree(false), "saída", "saídas")} nesta vista · clique para detalhes`),
+    ].filter(Boolean)
+  );
+  const p = no.renderedPosition();
+  dica.style.left = `${Math.max(8, Math.min(p.x + 20, cy.width() - 270))}px`;
+  dica.style.top = `${Math.max(8, Math.min(p.y - 12, cy.height() - 110))}px`;
+  dica.hidden = false;
+}
+
+function limparHover() {
+  if (!estado.cy) return;
+  estado.cy.elements().removeClass("hover-apagado hover-vizinho hover-aresta hover-foco");
+  $("#dica-rede").hidden = true;
 }
 
 /* Layout da visão geral: uma coluna-bloco por estágio da cadeia (profundidade a partir dos
@@ -255,35 +355,39 @@ function posicoesEmBlocos(vertices, arestas) {
     const e = tipoDe.get(v.id) === "destino" ? maxLote + 1 : profundidade.get(v.id) ?? 0;
     (estagios[e] ||= []).push(v);
   }
-  const blocos = estagios.filter(Boolean);
-  for (const bloco of blocos) bloco.sort((a, b) => (a.criado_em < b.criado_em ? -1 : a.criado_em > b.criado_em ? 1 : a.id < b.id ? -1 : 1));
+  const nomeEstagio = (e) => (e === 0 ? "Insumos" : e === maxLote + 1 ? "Destinos" : `${e}ª transformação`);
+  const blocos = estagios.map((itens, e) => itens && { e, itens }).filter(Boolean);
+  for (const { itens } of blocos) itens.sort((a, b) => (a.criado_em < b.criado_em ? -1 : a.criado_em > b.criado_em ? 1 : a.id < b.id ? -1 : 1));
 
   const celulaX = 60;
   const celulaY = 26;
   const vao = 150;
   const caixa = $("#rede").getBoundingClientRect();
   const proporcao = Math.max(0.6, (caixa.width || 1000) / (caixa.height || 700));
-  const maior = Math.max(...blocos.map((b) => b.length));
+  const maior = Math.max(...blocos.map((b) => b.itens.length));
   let linhas = maior;
   let melhor = Infinity;
   for (let r = 1; r <= maior; r++) {
-    const largura = blocos.reduce((soma, b) => soma + Math.ceil(b.length / r) * celulaX, 0) + vao * (blocos.length - 1);
+    const largura = blocos.reduce((soma, b) => soma + Math.ceil(b.itens.length / r) * celulaX, 0) + vao * (blocos.length - 1);
     const erro = Math.abs(Math.log(largura / (r * celulaY) / proporcao));
     if (erro < melhor) [melhor, linhas] = [erro, r];
   }
 
   const posicoes = {};
+  const rotulos = [];
   let x = 0;
-  for (const bloco of blocos) {
-    const colunas = Math.ceil(bloco.length / linhas);
-    const linhasBloco = Math.ceil(bloco.length / colunas);
+  for (const { e, itens } of blocos) {
+    const colunas = Math.ceil(itens.length / linhas);
+    const linhasBloco = Math.ceil(itens.length / colunas);
     const deslocY = ((linhas - linhasBloco) * celulaY) / 2;
-    bloco.forEach((v, i) => {
+    itens.forEach((v, i) => {
       posicoes[v.id] = { x: x + Math.floor(i / linhasBloco) * celulaX, y: deslocY + (i % linhasBloco) * celulaY };
     });
+    rotulos.push({ id: `__estagio-${e}`, texto: nomeEstagio(e), x: x + ((colunas - 1) * celulaX) / 2, y: -50 });
     x += colunas * celulaX + vao;
   }
-  return posicoes;
+  for (const r of rotulos) posicoes[r.id] = { x: r.x, y: r.y };
+  return { posicoes, rotulos };
 }
 
 async function carregarRede() {
@@ -315,19 +419,26 @@ function esconderFaixa() {
   $("#faixa-estado").hidden = true;
 }
 
-// Enquadra a coleção sem passar de um zoom confortável (subgrafos pequenos não viram close-up).
-function enquadrar(colecao, zoomMaximo = 1.4) {
+// Enquadra a coleção sem passar de um zoom confortável (subgrafos pequenos não viram close-up)
+// e deixando livres a barra de busca e a faixa de status no topo e a legenda embaixo.
+function enquadrar(colecao, { zoomMaximo = 1.4, animar = true } = {}) {
   const cy = estado.cy;
   const alvo = colecao && colecao.nonempty() ? colecao : cy.elements();
   if (alvo.empty()) return;
   const caixa = alvo.boundingBox();
-  const margem = 60;
+  const margem = { topo: 112, base: 64, lado: 40 };
+  const largura = cy.width() - 2 * margem.lado;
+  const altura = cy.height() - margem.topo - margem.base;
   const zoom = Math.max(
     cy.minZoom(),
-    Math.min(zoomMaximo, (cy.width() - 2 * margem) / Math.max(caixa.w, 1), (cy.height() - 2 * margem) / Math.max(caixa.h, 1))
+    Math.min(zoomMaximo, largura / Math.max(caixa.w, 1), altura / Math.max(caixa.h, 1))
   );
-  const pan = { x: cy.width() / 2 - zoom * (caixa.x1 + caixa.w / 2), y: cy.height() / 2 - zoom * (caixa.y1 + caixa.h / 2) };
-  cy.animate({ zoom, pan }, { duration: semMovimento() ? 0 : 350 });
+  const pan = {
+    x: margem.lado + largura / 2 - zoom * (caixa.x1 + caixa.w / 2),
+    y: margem.topo + altura / 2 - zoom * (caixa.y1 + caixa.h / 2),
+  };
+  if (animar && !semMovimento()) cy.animate({ zoom, pan }, { duration: 350 });
+  else cy.viewport({ zoom, pan });
 }
 
 function subgrafoNaRede(vertices, arestas) {
@@ -338,9 +449,13 @@ function subgrafoNaRede(vertices, arestas) {
   return colecao;
 }
 
+let temporizadoresNivel = [];
+
 function limparClasses() {
+  temporizadoresNivel.forEach(clearTimeout);
+  temporizadoresNivel = [];
   estado.cy.remove(".tentativa");
-  estado.cy.elements().removeClass("apagado realce-recall realce-origem raiz ciclo");
+  estado.cy.elements().removeClass("apagado realce-recall realce-origem raiz ciclo pendente");
 }
 
 function esconderBotoesDestaque() {
@@ -349,41 +464,59 @@ function esconderBotoesDestaque() {
   $("#btn-isolar").hidden = true;
 }
 
+// Consultas pequenas aparecem isoladas (legíveis); as grandes, destacadas na rede inteira.
+const LIMITE_ISOLADO = 120;
+
+async function mostrarConsulta(consulta, onde = consulta.vertices.length <= LIMITE_ISOLADO ? "isolado" : "rede") {
+  const faltando = () => consulta.vertices.some((v) => estado.cy.getElementById(v.id).empty());
+  if (onde === "rede" && (estado.isolado || faltando())) await carregarRede();
+  if (onde === "isolado" || faltando()) {
+    estado.isolado = true;
+    desenhar(consulta.vertices, consulta.arestas);
+  }
+  destacarConsulta(consulta);
+}
+
 function destacarConsulta(consulta) {
   const cy = estado.cy;
-  const faltando = consulta.vertices.some((v) => cy.getElementById(v.id).empty());
-  if (faltando && !estado.isolado) {
-    isolarConsulta(consulta);
-    return;
+  const recall = consulta.tipo === "recall";
+  const classe = recall ? "realce-recall" : "realce-origem";
+  // agrupa vértices e arestas pelo nível da BFS; uma aresta acende junto com a ponta mais distante
+  const nivelDe = new Map(consulta.vertices.map((v) => [v.id, v.nivel]));
+  const porNivel = [];
+  const guardar = (nivel, el) => {
+    if (el.nonempty()) (porNivel[nivel] ||= cy.collection()).merge(el);
+  };
+  for (const v of consulta.vertices) guardar(v.nivel, cy.getElementById(v.id));
+  for (const a of consulta.arestas) {
+    guardar(Math.max(nivelDe.get(a.origem), nivelDe.get(a.destino)), cy.getElementById(`${a.origem}->${a.destino}`));
   }
-  const classe = consulta.tipo === "recall" ? "realce-recall" : "realce-origem";
-  const sub = subgrafoNaRede(consulta.vertices, consulta.arestas);
+  const sub = porNivel.reduce((acc, c) => (c ? acc.union(c) : acc), cy.collection());
   cy.batch(() => {
     limparClasses();
     if (!estado.isolado) cy.elements().addClass("apagado");
     sub.removeClass("apagado").addClass(classe);
     cy.getElementById(consulta.raiz).addClass("raiz");
+    porNivel.forEach((c, n) => n > 0 && c && c.addClass("pendente"));
+  });
+  const intervalo = semMovimento() ? 0 : 700;
+  porNivel.forEach((c, n) => {
+    if (n > 0 && c) temporizadoresNivel.push(setTimeout(() => c.removeClass("pendente"), n * intervalo));
   });
   enquadrar(sub);
-  const nome = consulta.tipo === "recall" ? "Recall" : "Origem";
   mostrarFaixa(
-    `${nome} de ${consulta.raiz}: ${consulta.total_vertices} vértices e ${consulta.total_arestas} arestas ` +
-      `em ${fmtMs(consulta.tempo_ms)}${estado.isolado ? " — subgrafo isolado" : ""}`,
+    `${recall ? "Recall" : "Origem"} de ${consulta.raiz}: ${consulta.total_vertices} vértices em ${fmtMs(consulta.tempo_ms)}. ` +
+      "Os níveis acendem na ordem em que a busca em largura os encontra.",
     consulta.tipo
   );
   $("#btn-limpar").hidden = false;
   $("#btn-isolar").hidden = false;
-  $("#btn-isolar").textContent = estado.isolado ? "Voltar à rede" : "Isolar subgrafo";
-}
-
-function isolarConsulta(consulta) {
-  estado.isolado = true;
-  desenhar(consulta.vertices, consulta.arestas);
-  destacarConsulta(consulta);
+  $("#btn-isolar").textContent = estado.isolado ? "Ver na rede completa" : "Isolar subgrafo";
 }
 
 async function limparDestaque() {
   esconderBotoesDestaque();
+  renderIntro();
   if (estado.isolado) await carregarRede();
   else {
     limparClasses();
@@ -395,12 +528,7 @@ async function limparDestaque() {
 
 async function alternarIsolamento() {
   if (!estado.consulta) return;
-  if (estado.isolado) {
-    await carregarRede();
-    destacarConsulta(estado.consulta);
-  } else {
-    isolarConsulta(estado.consulta);
-  }
+  await mostrarConsulta(estado.consulta, estado.isolado ? "rede" : "isolado");
 }
 
 function destacarCiclo(ciclo) {
@@ -436,7 +564,7 @@ async function consultar(tipo, id) {
     mostrarAba("consultar");
     $("#consulta-lote").value = consulta.raiz;
     renderResultado(consulta);
-    destacarConsulta(consulta);
+    await mostrarConsulta(consulta);
   } catch (erro) {
     avisar(erro.message);
   }
@@ -474,12 +602,30 @@ function renderResultado(consulta) {
   const raiz = porId.get(consulta.raiz);
   const recall = consulta.tipo === "recall";
 
-  const lotes = consulta.vertices.filter((v) => v.tipo !== "destino").length;
-  const resumo = recall
-    ? `O recolhimento atinge ${lotes} ${lotes === 1 ? "lote" : "lotes"} e ${consulta.resumo.destino.length} destinos.`
-    : `A cadeia envolve ${consulta.resumo.insumo.length} lotes de insumo.`;
-
   const fornecedores = [...new Set(doTipo("insumo").map((v) => v.atributos?.fornecedor).filter(Boolean))].sort();
+  const qtd = (tipo) => consulta.resumo[tipo].length;
+  const descricaoRaiz = `${raiz.id} (${raiz.nome}${extraDe(raiz) ? `, ${extraDe(raiz)}` : ""})`;
+  let resumo;
+  if (recall) {
+    resumo = qtd("produto_final") || qtd("destino")
+      ? `Se ${descricaoRaiz} estiver comprometido, é preciso recolher ${contar(qtd("produto_final"), "produto_final")} e avisar ${contar(qtd("destino"), "destino")}.`
+      : `${descricaoRaiz} ainda não chegou a nenhum produto final nem a nenhum destino: não há o que recolher.`;
+  } else if (raiz.tipo === "destino") {
+    resumo = `${raiz.nome} recebeu ${contar(qtd("produto_final"), "produto_final")}, feitos a partir de ${contar(qtd("insumo"), "insumo")} de ${fornecedores.length} fornecedores.`;
+  } else if (raiz.tipo === "insumo") {
+    resumo = `${descricaoRaiz} é um insumo: ele abre a cadeia, então a origem é o próprio fornecedor.`;
+  } else {
+    resumo = `${descricaoRaiz} foi feito a partir de ${contar(qtd("insumo"), "insumo")}, vindos de ${fornecedores.length} fornecedores.`;
+  }
+
+  const niveis = [];
+  for (const v of consulta.vertices) (niveis[v.nivel] ||= []).push(v);
+  const linhasNivel = niveis.map((vs, n) => {
+    if (n === 0) return h("li", {}, h("strong", {}, "Nível 0"), `${raiz.id}, o lote consultado`);
+    const contagem = {};
+    for (const v of vs) contagem[v.tipo] = (contagem[v.tipo] || 0) + 1;
+    return h("li", {}, h("strong", {}, `Nível ${n}`), Object.entries(contagem).map(([t, q]) => contar(q, t)).join(", "));
+  });
 
   const blocos = recall
     ? [
@@ -516,8 +662,86 @@ function renderResultado(consulta) {
         h("span", {}, `${fmtMs(consulta.tempo_ms)} no servidor`)
       )
     ),
-    h("p", { class: "ajuda" }, resumo),
+    h("p", { class: "resumo-consulta" }, resumo),
+    h(
+      "section",
+      { class: "grupo" },
+      h("h3", {}, recall ? "Como a busca chegou lá" : "Como a busca voltou até a origem"),
+      h("ol", { class: "niveis" }, linhasNivel)
+    ),
     ...blocos.filter(Boolean)
+  );
+}
+
+const PLURAL = {
+  insumo: ["lote de insumo", "lotes de insumo"],
+  intermediario: ["intermediário", "intermediários"],
+  produto_final: ["produto final", "produtos finais"],
+  destino: ["destino", "destinos"],
+};
+function contar(n, tipo) {
+  return `${n} ${PLURAL[tipo][n === 1 ? 0 : 1]}`;
+}
+
+// ------------------------------------------------------------------ guia de uso
+
+let exemplos = null;
+
+async function carregarExemplos() {
+  exemplos = await api("/api/exemplos");
+  if (!estado.consulta) renderIntro();
+}
+
+function botaoExemplo(classe, titulo, detalhe, acao) {
+  return h("button", { class: `exemplo ${classe}`, type: "button", onclick: acao }, h("strong", {}, titulo), h("span", {}, detalhe));
+}
+
+function renderIntro() {
+  const botoes = [];
+  if (exemplos?.recall) {
+    const r = exemplos.recall;
+    botoes.push(botaoExemplo("ex-recall", `Recall de ${r.id}`,
+      `${r.nome}${r.extra ? ` de ${r.extra}` : ""}. Chegou a ${contar(exemplos.recall_produtos, "produto_final")}.`,
+      () => consultar("recall", r.id)));
+  }
+  if (exemplos?.origem) {
+    const o = exemplos.origem;
+    botoes.push(botaoExemplo("ex-origem", `Origem de ${o.id}`, `${o.nome}: de onde veio cada ingrediente.`, () => consultar("origem", o.id)));
+  }
+  if (exemplos?.ciclo) {
+    const { origem, destino } = exemplos.ciclo;
+    botoes.push(botaoExemplo("ex-ciclo", "Tentar um vínculo proibido",
+      `${origem.id} → ${destino.id}: ${origem.nome} passaria a ser ingrediente de ${destino.nome}, um dos seus próprios ingredientes.`,
+      () => prepararVinculo(origem.id, destino.id)));
+  }
+  $("#resultado").replaceChildren(
+    h("h2", {}, "Como usar"),
+    h(
+      "ol",
+      { class: "passos-uso" },
+      h("li", {}, h("strong", {}, "Escolha um lote:"), " clique nele na rede ou digite no campo acima o código, o produto ou o fornecedor."),
+      h("li", {}, h("strong", {}, "Recall"), " mostra o que foi feito com o lote e para quem foi vendido. ", h("strong", {}, "Origem"), " mostra de onde ele veio."),
+      h("li", {}, "O resultado aparece isolado e acende nível por nível, na ordem da busca em largura. ", h("strong", {}, "Ver na rede completa"), " mostra o mesmo caminho no meio da cadeia inteira.")
+    ),
+    botoes.length
+      ? h("section", { class: "grupo" }, h("span", { class: "rotulo" }, "Experimente"), h("div", { class: "exemplos" }, botoes))
+      : h("p", { class: "vazio" }, "O banco está vazio. Registre um insumo na aba Registrar ou rode python -m rastro seed."),
+    h("p", { class: "ajuda" }, "Dica: passe o mouse sobre um lote na rede para ver o que ele é e acender só as ligações dele.")
+  );
+}
+
+function prepararVinculo(origem, destino) {
+  mostrarAba("registrar");
+  mostrarFormulario("form-vinculo");
+  $("#vinculo-origem").value = origem;
+  $("#vinculo-destino").value = destino;
+  $("#retorno-registro").replaceChildren(
+    h(
+      "div",
+      { class: "aviso info" },
+      h("strong", {}, "Campos preenchidos"),
+      `Registrar este vínculo diria que ${origem} entrou na produção de ${destino}. Só que ${destino} já é ingrediente de ${origem}. Aperte Registrar vínculo e veja o sistema recusar e mostrar o ciclo.`
+    )
   );
 }
 
@@ -661,7 +885,7 @@ async function registrar(evento) {
       $("#entradas").replaceChildren();
       novaEntrada();
     }
-    await Promise.all([carregarRede(), carregarIndicadores(), carregarDestinos()]);
+    await Promise.all([carregarRede(), carregarIndicadores(), carregarDestinos(), carregarExemplos()]);
     focar(criado.id || criado.destino);
     if (!$("#painel-eventos").hidden) carregarEventos();
   } catch (erro) {
@@ -791,7 +1015,6 @@ function ligarEventos() {
     const tipo = evento.submitter?.dataset.tipo || "recall";
     consultar(tipo, $("#consulta-lote").value);
   });
-  $("#exemplo-recall").addEventListener("click", () => consultar("recall", "INS-000001"));
   $("#adicionar-entrada").addEventListener("click", () => novaEntrada().querySelector("input").focus());
   $("#btn-limpar").addEventListener("click", limparDestaque);
   $("#btn-isolar").addEventListener("click", alternarIsolamento);
@@ -810,10 +1033,11 @@ async function iniciar() {
   ativarAutocompletar();
   novaEntrada();
   try {
-    await Promise.all([carregarRede(), carregarIndicadores(), carregarDestinos(), preencherLista($("#lista-vertices"), "")]);
+    await Promise.all([carregarRede(), carregarIndicadores(), carregarDestinos(), carregarExemplos(), preencherLista($("#lista-vertices"), "")]);
   } catch (erro) {
     mostrarFaixa(`Não foi possível falar com a API: ${erro.message}`, "recall");
   }
 }
 
+window.rastro = estado; // depuração: window.rastro.cy no console do navegador
 iniciar();

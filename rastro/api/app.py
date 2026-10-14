@@ -185,6 +185,36 @@ def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] 
             ids = g.vizinhanca(vertice_id, raio)
             return _subgrafo(g, ids, truncado=len(ids) < g.num_vertices)
 
+    @app.get("/api/exemplos", tags=["consultas"])
+    def exemplos(servico: ServicoRastro = Servico):
+        """Lotes que rendem boas demonstrações: o recall mais amplo entre os lotes de leite cru,
+        a origem mais rica entre os produtos finais e um vínculo que fecharia ciclo."""
+        with servico.leitura() as g:
+            def resumo(v: Vertice) -> dict:
+                return {"id": v.id, "nome": v.nome, "extra": v.atributos.get("fornecedor") or v.atributos.get("cidade")}
+
+            insumos = [v for v in g.vertices(TipoVertice.INSUMO) if v.nome == "Leite cru"]
+            insumos = (insumos or list(g.vertices(TipoVertice.INSUMO)))[:80]
+            produtos = list(g.vertices(TipoVertice.PRODUTO_FINAL))[:80]
+            recall = max(
+                insumos, key=lambda v: len(g.recall(v.id).por_tipo[TipoVertice.PRODUTO_FINAL]), default=None
+            )
+            origem = max(produtos, key=lambda v: g.origem(v.id).total_vertices, default=None)
+            ciclo = None
+            for produto in produtos:
+                ingrediente = next(
+                    (p for p in g.predecessores(produto.id) if g.vertice(p).tipo is TipoVertice.INTERMEDIARIO), None
+                )
+                if ingrediente:
+                    ciclo = {"origem": resumo(produto), "destino": resumo(g.vertice(ingrediente))}
+                    break
+            return {
+                "recall": resumo(recall) if recall else None,
+                "recall_produtos": len(g.recall(recall.id).por_tipo[TipoVertice.PRODUTO_FINAL]) if recall else 0,
+                "origem": resumo(origem) if origem else None,
+                "ciclo": ciclo,
+            }
+
     @app.get("/api/eventos", response_model=list[e.EventoDetalheOut], tags=["eventos"])
     def listar_eventos(limite: int = Query(default=30, ge=1, le=500), servico: ServicoRastro = Servico):
         return servico.repo.listar_eventos(limite)

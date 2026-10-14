@@ -5,8 +5,8 @@ Pacote 1.6.1 da EAP. Este manual descreve a interface web. Para instalar e subir
 ## Visão geral da tela
 
 - **Topo**: indicadores da base (lotes, destinos, arestas, cadeia mais longa) e o banco em uso.
-- **Painel lateral**: abas *Consultar*, *Registrar* e *Eventos*.
-- **Rede**: o grafo da cadeia produtiva. Cada estágio da cadeia é um bloco, da esquerda para a direita: insumos, intermediários, produtos finais e, por último, os destinos. Dentro de cada bloco os lotes seguem a ordem de registro. Arestas tracejadas são expedições.
+- **Painel lateral**: abas *Consultar*, *Registrar* e *Eventos*. Ao abrir, a aba *Consultar* mostra um guia de uso com três exemplos prontos, escolhidos a partir dos dados: o recall de um lote de leite cru, a origem de um produto final e um vínculo que o sistema recusa por fechar um ciclo.
+- **Rede**: o grafo da cadeia produtiva. Cada estágio da cadeia é um bloco com título, da esquerda para a direita: insumos, 1ª transformação, 2ª transformação e assim por diante, e por último os destinos. Dentro de cada bloco os lotes seguem a ordem de registro. Arestas tracejadas são expedições.
 
 | Cor e forma | Tipo |
 |---|---|
@@ -15,7 +15,9 @@ Pacote 1.6.1 da EAP. Este manual descreve a interface web. Para instalar e subir
 | Etiqueta azul | Produto final |
 | Pentágono roxo | Destino |
 
-Use a roda do mouse (ou pinça no celular) para aproximar; os códigos dos lotes aparecem conforme o zoom aumenta. **Enquadrar** volta a mostrar a rede inteira. Clicar em um vértice abre o painel de detalhe com quantidade, fornecedor ou cidade, as arestas de entrada e de saída e atalhos para consultas.
+![Tela inicial com o guia de uso e a rede por estágios](img/inicio.jpg)
+
+Passe o mouse sobre um lote para ver um cartão com código, produto e fornecedor ou cidade; a rede acende só esse lote, seus vizinhos diretos e as ligações entre eles. Use a roda do mouse (ou pinça no celular) para aproximar; os códigos aparecem conforme o zoom aumenta. **Ver tudo** volta a enquadrar a rede inteira. Clicar em um vértice abre o painel de detalhe com quantidade, fornecedor ou cidade, as arestas de entrada e de saída e atalhos para consultas.
 
 Quando a base tem mais de 1 500 vértices, a rede mostra os destinos e os lotes mais recentes, e uma faixa avisa quantos estão visíveis. Consultas, a busca e o botão *Vizinhança* abrem qualquer parte do grafo.
 
@@ -24,21 +26,23 @@ Quando a base tem mais de 1 500 vértices, a rede mostra os destinos e os lotes 
 Use quando um lote foi comprometido (contaminação, falha de processo) e é preciso saber o que recolher e quem avisar.
 
 1. Na aba **Consultar**, digite o código do lote (o campo sugere lotes pelo código, produto, fornecedor ou cidade) e clique em **Recall**. Também é possível clicar no lote na rede e usar o botão *Recall* do painel de detalhe.
-2. A rede apaga tudo o que não foi afetado e destaca em vermelho o caminho do lote até os destinos.
-3. O painel lista os **destinos a notificar** (com cidade), os **produtos finais a recolher**, os intermediários afetados e quanto tempo a consulta levou no servidor.
-4. **Isolar subgrafo** redesenha só a parte afetada, em camadas, para leitura. **Voltar à rede** retorna à visão completa e **Limpar destaque** remove a seleção.
+2. A rede mostra só a parte afetada, em camadas, com código e nome em cada lote. Os níveis acendem um por vez, na ordem em que a busca em largura os encontra: o lote consultado, depois o que foi feito com ele, depois o que foi feito com isso, até os destinos.
+3. O painel resume o resultado em uma frase ("é preciso recolher 13 produtos finais e avisar 9 destinos"), mostra quantos vértices a busca encontrou em cada nível e lista os **destinos a notificar** (com cidade), os **produtos finais a recolher** e os intermediários afetados.
+4. **Ver na rede completa** mostra o mesmo caminho, em vermelho, no meio da cadeia inteira. **Isolar subgrafo** volta à vista isolada e **Limpar destaque** encerra a consulta e volta ao guia de uso.
 
-![Recall destacado na rede](img/recall.jpg)
+Consultas muito grandes (mais de 120 vértices) aparecem direto na rede completa, para não desenhar um subgrafo ilegível.
 
-![Subgrafo do recall isolado](img/recall-isolado.jpg)
+![Recall de um lote de leite cru, isolado](img/recall.jpg)
+
+![O mesmo recall na rede completa](img/recall-rede.jpg)
 
 ## Auditoria de origem
 
 Use para responder de onde veio um produto, por exemplo numa auditoria ou reclamação de cliente.
 
 1. Digite o código do lote e clique em **Origem**.
-2. A rede destaca em verde toda a cadeia que compôs o lote.
-3. O painel lista os **insumos de origem** com o fornecedor de cada um, os **fornecedores envolvidos** e os intermediários do caminho.
+2. A rede mostra em verde toda a cadeia que compôs o lote, acendendo nível por nível no sentido contrário das setas, até os insumos.
+3. O painel resume quantos lotes de insumo e quantos fornecedores entraram no produto e lista os **insumos de origem** com o fornecedor de cada um, os **fornecedores envolvidos** e os intermediários do caminho.
 
 Para um destino, o botão do painel de detalhe se chama *O que recebeu*: ele mostra todos os lotes enviados ao cliente e suas origens.
 

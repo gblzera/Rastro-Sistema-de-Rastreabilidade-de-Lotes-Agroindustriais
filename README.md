@@ -8,6 +8,8 @@ O Rastro registra a cadeia produtiva de uma agroindústria como um **grafo acíc
 - **Auditoria de origem**: de quais lotes de insumo, e de quais fornecedores, veio este produto? (BFS ascendente)
 - **Integridade**: a cada nova aresta, o sistema verifica se ela faria um lote virar ancestral de si mesmo e, se fizer, recusa a operação e mostra o ciclo.
 
+**Versão publicada:** [rastro-wo9d.onrender.com](https://rastro-wo9d.onrender.com) (plano gratuito do Render: o primeiro acesso depois de um tempo parado leva cerca de 1 minuto).
+
 ## Como rodar
 
 Requer Python 3.9 ou mais novo (o Python que já vem no macOS serve).
@@ -104,4 +106,4 @@ Veja [docs/checkpoints.md](docs/checkpoints.md) para o estado de cada pacote de 
 | CP2 — motor integrado à API e à interface | 09/10 | Entregue |
 | CP3 — aplicação minimamente operável | 16/10 | Entregue (PostgreSQL, visualização, base sintética) |
 | CP4 — aplicação satisfatoriamente operável | 23/10 | Entregue (destaque do subgrafo, testes de carga) |
-| CP5 — aplicação completa e refinamento visual | 30/10 | Entregue; publicação online pelo [guia de implantação](docs/implantacao.md) |
+| CP5 — aplicação completa e refinamento visual | 30/10 | Entregue e publicada em [rastro-wo9d.onrender.com](https://rastro-wo9d.onrender.com) |

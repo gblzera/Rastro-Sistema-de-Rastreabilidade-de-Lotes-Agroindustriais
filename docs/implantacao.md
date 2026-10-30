@@ -1,6 +1,8 @@
 # Implantação
 
-Pacote 1.6.2 da EAP. O Rastro roda no plano gratuito do [Render](https://render.com), com o banco PostgreSQL no plano gratuito do [Neon](https://neon.tech). As duas contas podem ser criadas com o login do GitHub. Leva cerca de 10 minutos.
+Pacote 1.6.2 da EAP. **Versão publicada:** [rastro-wo9d.onrender.com](https://rastro-wo9d.onrender.com).
+
+O Rastro roda no plano gratuito do [Render](https://render.com), com o banco PostgreSQL no plano gratuito do [Neon](https://neon.tech). As duas contas podem ser criadas com o login do GitHub. Leva cerca de 10 minutos.
 
 O arquivo `render.yaml` na raiz do repositório já descreve o serviço: instala as dependências, sobe a API com um único processo e, se o banco estiver vazio, popula 300 lotes sintéticos na primeira subida.
 

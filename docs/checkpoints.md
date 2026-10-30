@@ -24,10 +24,10 @@ Pacote 1.1.3 da EAP. Situação em 30/10/2026, data do Checkpoint 5.
 | 1.4.4 | Refinamento visual da rede | CP5 (30/10) | Concluído | `web/`: estágios com título, consultas isoladas e animadas por nível da BFS, foco ao passar o mouse, guia de uso |
 | 1.5.1 | Testes automatizados | CP5 (30/10) | Concluído: 75 testes (91 execuções com PostgreSQL), CI em Python 3.9 e 3.12 | `tests/`, `.github/workflows/testes.yml` |
 | 1.6.1 | Manual de uso | CP5 (30/10) | Concluído | [manual](manual.md) |
-| 1.6.2 | Implantação da aplicação | CP5 (30/10) | Configuração validada; publicação depende das contas no Render e no Neon | `render.yaml`, [guia de implantação](implantacao.md), `docker-compose.yml` |
+| 1.6.2 | Implantação da aplicação | CP5 (30/10) | Concluído: publicada em [rastro-wo9d.onrender.com](https://rastro-wo9d.onrender.com) | `render.yaml`, [guia de implantação](implantacao.md) |
 | 1.6.3 | Seminário com demonstração ao vivo | 03/11–20/11 | Roteiro pronto | roteiro abaixo |
 
-CP1 e CP2 foram entregues com atraso em relação ao calendário (em 14/10). O CP3 foi entregue no prazo e recuperou o cronograma, os pacotes do CP4 foram adiantados e o CP5 foi concluído em 30/10, faltando só publicar a aplicação.
+CP1 e CP2 foram entregues com atraso em relação ao calendário (em 14/10). O CP3 foi entregue no prazo e recuperou o cronograma, os pacotes do CP4 foram adiantados e o CP5 foi concluído e publicado em 30/10.
 
 ## Roteiros de demonstração
 
@@ -64,5 +64,4 @@ Discutir as tabelas de [testes-de-carga.md](testes-de-carga.md): crescimento lin
 
 ## Pendências
 
-- **Publicar (1.6.2)**: seguir o [guia de implantação](implantacao.md). A configuração foi validada numa cópia limpa do repositório, com e sem PostgreSQL, rodando o mesmo comando que o Render usa.
-- **Seminário (1.6.3)**: ensaiar o roteiro acima na versão publicada, com a versão local como plano B (funciona sem internet).
+- **Seminário (1.6.3)**: ensaiar o roteiro acima na versão publicada (https://rastro-wo9d.onrender.com), aberta uns 5 minutos antes para o serviço gratuito acordar, com a versão local como plano B (funciona sem internet).

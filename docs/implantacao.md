@@ -19,7 +19,7 @@ Guarde essa string: ela contém a senha do banco e não deve ir para o repositó
 ## 2. Publicar no Render
 
 1. Entre em [dashboard.render.com](https://dashboard.render.com) com a conta do GitHub e autorize o acesso ao repositório `Rastro-Sistema-de-Rastreabilidade-de-Lotes-Agroindustriais`.
-2. Clique em **New** → **Blueprint** e escolha o repositório. O Render lê o `render.yaml` e mostra o serviço `rastro`.
+2. Clique em **New** → **Blueprint** e escolha o repositório, na branch `main`. O Render lê o `render.yaml` e mostra o serviço `rastro`.
 3. Quando ele pedir `DATABASE_URL`, cole a connection string do Neon.
 4. Clique em **Apply** (ou **Deploy Blueprint**). A primeira publicação leva de 3 a 5 minutos.
 5. Quando o status ficar **Live**, o endereço aparece no topo da página do serviço, no formato `https://rastro-xxxx.onrender.com`.
@@ -38,6 +38,6 @@ Se faltar tempo para criar o banco, deixe `DATABASE_URL` em branco no passo 3. A
 
 ## Atualizar a versão publicada
 
-Cada `git push` na branch publicada dispara uma nova implantação automática no Render. Os dados no Neon continuam lá; o grafo é reconstruído a partir deles quando o serviço sobe.
+Cada `git push` na `main` dispara uma nova implantação automática no Render. Os dados no Neon continuam lá; o grafo é reconstruído a partir deles quando o serviço sobe.
 
 Para recomeçar com a base sintética, apague as tabelas no Neon (no **SQL Editor**: `DROP TABLE arestas, vertices, eventos;`) e reinicie o serviço pelo painel do Render. Na subida, o banco vazio é populado de novo.

@@ -39,7 +39,7 @@ Para levar os dados do SQLite de desenvolvimento para o PostgreSQL:
 python -m rastro migrar --de sqlite:///rastro.db --para postgresql://rastro:rastro@localhost/rastro
 ```
 
-Com Docker, `docker compose up --build` sobe o PostgreSQL e a aplicação, já com 300 lotes sintéticos.
+Com Docker, `docker compose up --build` sobe o PostgreSQL e a aplicação, já com 300 lotes sintéticos. Para publicar online (Render + Neon, planos gratuitos), siga o [guia de implantação](docs/implantacao.md).
 
 > O grafo vive em memória e é reconstruído a partir do banco quando a aplicação inicia. Por isso ela roda com **um único processo**, e um `seed --reset` feito com o servidor no ar só aparece depois de reiniciá-lo.
 
@@ -103,5 +103,5 @@ Veja [docs/checkpoints.md](docs/checkpoints.md) para o estado de cada pacote de 
 | CP1 — motor de grafos no terminal | 02/10 | Entregue (`python -m rastro demo`) |
 | CP2 — motor integrado à API e à interface | 09/10 | Entregue |
 | CP3 — aplicação minimamente operável | 16/10 | Entregue (PostgreSQL, visualização, base sintética) |
-| CP4 — aplicação satisfatoriamente operável | 23/10 | Adiantado: destaque do subgrafo e testes de carga prontos |
-| CP5 — aplicação completa e refinamento visual | 30/10 | Em andamento: manual, CI e arquivos de implantação prontos; falta publicar e refinar |
+| CP4 — aplicação satisfatoriamente operável | 23/10 | Entregue (destaque do subgrafo, testes de carga) |
+| CP5 — aplicação completa e refinamento visual | 30/10 | Entregue; publicação online pelo [guia de implantação](docs/implantacao.md) |

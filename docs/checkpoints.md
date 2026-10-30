@@ -1,6 +1,6 @@
 # Acompanhamento dos checkpoints
 
-Pacote 1.1.3 da EAP. Situação em 14/10/2026.
+Pacote 1.1.3 da EAP. Situação em 30/10/2026, data do Checkpoint 5.
 
 ## Pacotes de trabalho
 
@@ -8,7 +8,7 @@ Pacote 1.1.3 da EAP. Situação em 14/10/2026.
 |---|---|---|---|---|
 | 1.1.1 | Termo de Abertura do Projeto | A1 (25/09) | Entregue | — |
 | 1.1.2 | EAP e cronograma | A1 (25/09) | Entregue | — |
-| 1.1.3 | Acompanhamento dos checkpoints | CP5 (30/10) | Em andamento | este documento |
+| 1.1.3 | Acompanhamento dos checkpoints | CP5 (30/10) | Concluído | este documento |
 | 1.2.1 | Modelo do grafo | CP1 (02/10) | Concluído | `rastro/grafo/modelo.py` |
 | 1.2.2 | Motor com verificação de aciclicidade | CP1 (02/10) | Concluído | `rastro/grafo/motor.py` |
 | 1.2.3 | Consultas de recall e origem | CP1 (02/10) | Concluído | `rastro/grafo/motor.py`, `python -m rastro demo` |
@@ -21,13 +21,13 @@ Pacote 1.1.3 da EAP. Situação em 14/10/2026.
 | 1.5.2 | Base sintética de porte crescente | CP3 (16/10) | Concluído | `rastro/sintetico.py`, `python -m rastro seed` |
 | 1.4.3 | Destaque do subgrafo nas consultas | CP4 (23/10) | Concluído (adiantado) | `web/app.js` |
 | 1.5.3 | Testes de carga no grafo | CP4 (23/10) | Concluído (adiantado) | `rastro/benchmark.py`, [resultados](testes-de-carga.md) |
-| 1.4.4 | Refinamento visual da rede | CP5 (30/10) | Em andamento | — |
-| 1.5.1 | Testes automatizados | CP5 (30/10) | 74 testes (89 execuções com PostgreSQL); CI no GitHub Actions | `tests/`, `.github/workflows/testes.yml` |
-| 1.6.1 | Manual de uso | CP5 (30/10) | Primeira versão | [manual](manual.md) |
-| 1.6.2 | Implantação da aplicação | CP5 (30/10) | Arquivos prontos; falta publicar | `Dockerfile`, `render.yaml`, `docker-compose.yml` |
-| 1.6.3 | Seminário com demonstração ao vivo | 03/11–20/11 | A preparar | roteiro abaixo |
+| 1.4.4 | Refinamento visual da rede | CP5 (30/10) | Concluído | `web/`: estágios com título, consultas isoladas e animadas por nível da BFS, foco ao passar o mouse, guia de uso |
+| 1.5.1 | Testes automatizados | CP5 (30/10) | Concluído: 75 testes (91 execuções com PostgreSQL), CI em Python 3.9 e 3.12 | `tests/`, `.github/workflows/testes.yml` |
+| 1.6.1 | Manual de uso | CP5 (30/10) | Concluído | [manual](manual.md) |
+| 1.6.2 | Implantação da aplicação | CP5 (30/10) | Configuração validada; publicação depende das contas no Render e no Neon | `render.yaml`, [guia de implantação](implantacao.md), `docker-compose.yml` |
+| 1.6.3 | Seminário com demonstração ao vivo | 03/11–20/11 | Roteiro pronto | roteiro abaixo |
 
-CP1 e CP2 foram entregues com atraso em relação ao calendário; o CP3 recupera o cronograma e os pacotes do CP4 foram adiantados.
+CP1 e CP2 foram entregues com atraso em relação ao calendário (em 14/10). O CP3 foi entregue no prazo e recuperou o cronograma, os pacotes do CP4 foram adiantados e o CP5 foi concluído em 30/10, faltando só publicar a aplicação.
 
 ## Roteiros de demonstração
 
@@ -39,19 +39,19 @@ python -m rastro demo
 
 Gera a base sintética, faz o recall de um lote de leite cru (níveis da BFS, produtos a recolher e destinos a notificar), a auditoria de origem de um produto (árvore de insumos e fornecedores) e tenta um vínculo que fecharia ciclo, que é recusado com o caminho do ciclo.
 
-### CP2 e CP3 — aplicação integrada
+### CP2 a CP5 e seminário — aplicação integrada
 
 ```bash
-export DATABASE_URL=postgresql://rastro:rastro@localhost/rastro
+export DATABASE_URL=postgresql://rastro:rastro@localhost/rastro   # opcional; sem isso usa SQLite
 python -m rastro seed --lotes 200 --reset
 python -m rastro serve
 ```
 
-1. Mostrar no topo que o banco é PostgreSQL e os indicadores da base.
-2. Registrar um insumo, uma produção com duas entradas e uma expedição. Mostrar o novo vértice na rede e os eventos.
-3. Recall de `INS-000001`: destaque na rede, destinos e produtos no painel, tempo no servidor.
-4. Origem de um produto final: fornecedores envolvidos.
-5. Vínculo `PRD-000002` → `INT-000001`: recusado, com o ciclo desenhado.
+1. Mostrar no topo o banco em uso e os indicadores da base; a rede organizada por estágios da cadeia. Passar o mouse num lote para mostrar suas ligações.
+2. No guia de uso, clicar em **Recall de INS-000001**: o subgrafo aparece isolado e acende nível por nível, e o painel diz quantos produtos recolher e quais destinos avisar. Depois, **Ver na rede completa**.
+3. **Origem** do pão de forma sugerido no guia: insumos e fornecedores.
+4. **Tentar um vínculo proibido**: o sistema recusa e desenha o ciclo.
+5. Registrar uma produção com duas entradas e mostrar o vértice novo na rede e na aba Eventos.
 6. Reiniciar o servidor e mostrar que o grafo é reconstruído do banco.
 
 ### CP4 — testes de carga
@@ -62,9 +62,7 @@ python -m rastro benchmark --sql $DATABASE_URL
 
 Discutir as tabelas de [testes-de-carga.md](testes-de-carga.md): crescimento linear da reconstrução, recall estável em microssegundos, CTE recursiva entre 70 e 300 vezes mais lenta e o pior caso da DFS na cadeia linear.
 
-## Próximos passos
+## Pendências
 
-- **Implantação (1.6.2)**: criar o banco gratuito no Neon, criar o serviço no Render a partir do `render.yaml` e informar `DATABASE_URL`. O banco vazio é populado com 300 lotes na primeira subida (`RASTRO_SEED_SE_VAZIO`).
-- **Refinamento visual (1.4.4)**: animação do avanço da BFS por níveis no recall, rótulos com o nome do produto no subgrafo isolado e ajustes de contraste.
-- **Manual (1.6.1)**: revisar com capturas da versão publicada.
-- **Seminário (1.6.3)**: ensaiar o roteiro do CP2/CP3 sobre a versão publicada, com a demo local como plano B (funciona sem internet).
+- **Publicar (1.6.2)**: seguir o [guia de implantação](implantacao.md). A configuração foi validada numa cópia limpa do repositório, com e sem PostgreSQL, rodando o mesmo comando que o Render usa.
+- **Seminário (1.6.3)**: ensaiar o roteiro acima na versão publicada, com a versão local como plano B (funciona sem internet).

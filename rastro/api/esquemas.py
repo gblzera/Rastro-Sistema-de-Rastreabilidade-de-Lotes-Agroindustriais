@@ -92,9 +92,23 @@ class ArestaOut(BaseModel):
     evento_id: Optional[int]
 
 
+class VizinhoOut(BaseModel):
+    id: str
+    nome: str
+    tipo: TipoVertice
+    extra: Optional[str]
+
+
+class LigacaoVizinhoOut(ArestaOut):
+    vizinho: VizinhoOut
+
+
 class VerticeDetalheOut(VerticeOut):
-    entradas: list[ArestaOut]
-    saidas: list[ArestaOut]
+    entradas: list[LigacaoVizinhoOut]
+    saidas: list[LigacaoVizinhoOut]
+    fornecedores_origem: list[str]
+    antes: int
+    depois: int
 
 
 class EventoOut(BaseModel):

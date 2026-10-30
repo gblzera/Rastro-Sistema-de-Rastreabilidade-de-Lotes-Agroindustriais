@@ -216,11 +216,14 @@ function estiloRede() {
         "text-background-opacity": 1,
       },
     },
-    // foco ao passar o mouse: o lote, seus vizinhos diretos e as arestas entre eles
-    { selector: ".hover-apagado", style: { opacity: 0.07 } },
-    { selector: ".hover-vizinho", style: { opacity: 1 } },
-    { selector: "edge.hover-aresta", style: { width: 2, "line-color": c.ink2, "target-arrow-color": c.ink2 } },
-    { selector: "node.hover-foco", style: { "border-width": 3, "border-color": c.ink } },
+    // rastreabilidade do lote sob o mouse (ou fixado com clique): verde = de onde veio, vermelho = para onde foi
+    { selector: ".traco-fora", style: { opacity: 0.07 } },
+    { selector: ".traco-antes, .traco-depois, .traco-foco", style: { opacity: 1 } },
+    { selector: "node.traco-antes", style: { "border-width": 2.5, "border-color": c.origem } },
+    { selector: "edge.traco-antes", style: { width: 2.2, "line-color": c.origem, "target-arrow-color": c.origem } },
+    { selector: "node.traco-depois", style: { "border-width": 2.5, "border-color": c.recall } },
+    { selector: "edge.traco-depois", style: { width: 2.2, "line-color": c.recall, "target-arrow-color": c.recall } },
+    { selector: "node.traco-foco", style: { "border-width": 4, "border-color": c.ink, "font-weight": "bold" } },
     { selector: "node.rotulo-coluna", style: { opacity: 1 } },
     { selector: "node:selected", style: { "overlay-color": c.ink, "overlay-opacity": 0.18, "overlay-padding": 5 } },
   ];
@@ -234,13 +237,16 @@ function iniciarRede() {
     maxZoom: 4,
     boxSelectionEnabled: false,
   });
-  estado.cy.on("tap", "node", (evento) => selecionar(evento.target.id()));
+  estado.cy.on("tap", "node.no", (evento) => selecionar(evento.target.id()));
   estado.cy.on("tap", (evento) => {
     if (evento.target === estado.cy) fecharDetalhe();
   });
-  estado.cy.on("mouseover", "node.no", (evento) => focarHover(evento.target));
-  estado.cy.on("mouseout", "node.no", limparHover);
-  estado.cy.on("viewport", () => ($("#dica-rede").hidden = true));
+  estado.cy.on("mousemove", aoMoverMouse);
+  $("#rede").addEventListener("mouseleave", () => atualizarHover(null));
+  estado.cy.on("viewport", () => {
+    esconderDica();
+    estado.hoverId = null;
+  });
   const atualizarEstilo = () => estado.cy.style(estiloRede());
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", atualizarEstilo);
   new MutationObserver(atualizarEstilo).observe(document.documentElement, {
@@ -270,7 +276,7 @@ function desenhar(vertices, arestas) {
   const cy = estado.cy;
   const visaoGeral = vertices.length > LIMITE_DAGRE;
   const blocos = visaoGeral ? posicoesEmBlocos(vertices, arestas) : null;
-  limparHover();
+  resetarTraco();
   cy.batch(() => {
     cy.elements().remove();
     cy.add(elementos(vertices, arestas, !visaoGeral));
@@ -289,40 +295,133 @@ function desenhar(vertices, arestas) {
   enquadrar(cy.elements(), { zoomMaximo: 1.5, animar: false });
 }
 
-function focarHover(no) {
-  const cy = estado.cy;
-  cy.batch(() => {
-    no.addClass("hover-foco");
-    // explorando a rede, acende só o lote e seus vizinhos; com uma consulta na tela, não mexe nela
-    if (!estado.consulta) {
-      const vizinhanca = no.closedNeighborhood();
-      cy.elements().not(vizinhanca).not(".rotulo-coluna").addClass("hover-apagado");
-      vizinhanca.addClass("hover-vizinho");
-      vizinhanca.edges().addClass("hover-aresta");
+// ------------------------------------------------------------------ rastreabilidade sob o mouse
+
+// Distância máxima, em pixels da tela, entre o cursor e um lote para ele ser o "lote sob o mouse".
+// Assim a rastreabilidade não pisca nos vãos entre os lotes de uma coluna.
+const RAIO_HOVER = 44;
+let posicaoHover = null;
+let quadroHover = null;
+
+function aoMoverMouse(evento) {
+  if (evento.originalEvent?.buttons) return; // arrastando a rede
+  posicaoHover = evento.renderedPosition;
+  if (quadroHover) return; // no máximo uma atualização por quadro
+  quadroHover = requestAnimationFrame(() => {
+    quadroHover = null;
+    atualizarHover(posicaoHover);
+  });
+}
+
+function loteMaisProximo(p) {
+  let melhor = null;
+  let melhorDistancia = RAIO_HOVER * RAIO_HOVER;
+  estado.cy.nodes(".no").forEach((no) => {
+    const q = no.renderedPosition();
+    const d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
+    if (d < melhorDistancia) {
+      melhorDistancia = d;
+      melhor = no;
     }
   });
+  return melhor;
+}
+
+function atualizarHover(p) {
+  if (!estado.cy) return;
+  const no = p ? loteMaisProximo(p) : null;
+  const id = no ? no.id() : null;
+  if (id === estado.hoverId) return;
+  estado.hoverId = id;
+  if (!no) {
+    esconderDica();
+    if (!estado.fixado) limparTraco();
+    return;
+  }
+  mostrarDica(no);
+  // com um lote fixado por clique, o mouse só mostra o cartão; a rastreabilidade fixa fica
+  if (!estado.fixado) aplicarTraco(no);
+}
+
+function aplicarTraco(no) {
+  const cy = estado.cy;
+  const antes = no.predecessors();
+  const depois = no.successors();
+  cy.batch(() => {
+    cy.elements().removeClass("traco-fora traco-antes traco-depois traco-foco");
+    cy.elements().not(antes).not(depois).not(no).not(".rotulo-coluna").addClass("traco-fora");
+    antes.addClass("traco-antes");
+    depois.addClass("traco-depois");
+    no.addClass("traco-foco");
+  });
+}
+
+function limparTraco() {
+  estado.cy?.elements().removeClass("traco-fora traco-antes traco-depois traco-foco");
+}
+
+function fixarTraco(id) {
+  const no = estado.cy.getElementById(id);
+  if (no.empty() || !no.hasClass("no")) return;
+  estado.fixado = id;
+  aplicarTraco(no);
+}
+
+function soltarTraco() {
+  estado.fixado = null;
+  estado.hoverId = null;
+  limparTraco();
+}
+
+// antes de redesenhar a rede: os elementos antigos somem junto com os destaques
+function resetarTraco() {
+  estado.fixado = null;
+  estado.hoverId = null;
+  esconderDica();
+}
+
+function fornecedoresDaOrigem(no) {
+  return [...new Set(
+    no.predecessors("node.no").filter((n) => n.data("tipo") === "insumo").map((n) => n.data("extra")).filter(Boolean)
+  )].sort();
+}
+
+function mostrarDica(no) {
+  const cy = estado.cy;
   const d = no.data();
-  const qtd = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+  const antes = no.predecessors("node.no").length;
+  const depois = no.successors("node.no").length;
+  let origem = null;
+  if (d.tipo === "insumo") origem = d.extra ? `Fornecedor: ${d.extra}` : null;
+  else if (d.tipo === "destino") origem = d.extra || null;
+  else {
+    const f = fornecedoresDaOrigem(no);
+    if (f.length) {
+      const resto = f.length > 2 ? ` e mais ${f.length - 2}` : "";
+      origem = `Veio de ${f.length === 1 ? "1 fornecedor" : `${f.length} fornecedores`}: ${f.slice(0, 2).join("; ")}${resto}`;
+    }
+  }
+  const parcial = estado.isolado || estado.truncado ? " nesta vista" : "";
   const dica = $("#dica-rede");
   dica.replaceChildren(
     ...[
       h("span", { class: "pilula" }, NOME_TIPO[d.tipo]),
       h("strong", {}, etiqueta(d.id, d.tipo), " ", d.nome),
-      d.extra ? h("span", {}, d.extra) : null,
+      origem ? h("span", {}, origem) : null,
       h("span", { class: "sub" },
-        `${qtd(no.indegree(false), "entrada", "entradas")} e ${qtd(no.outdegree(false), "saída", "saídas")} nesta vista · clique para detalhes`),
+        h("span", { class: "antes" }, `${antes} antes`), " e ", h("span", { class: "depois" }, `${depois} depois`),
+        ` na cadeia${parcial} · clique para fixar`),
     ].filter(Boolean)
   );
   const p = no.renderedPosition();
-  dica.style.left = `${Math.max(8, Math.min(p.x + 20, cy.width() - 270))}px`;
-  dica.style.top = `${Math.max(8, Math.min(p.y - 12, cy.height() - 110))}px`;
+  dica.style.left = `${Math.max(8, Math.min(p.x + 24, cy.width() - 280))}px`;
+  dica.style.top = `${Math.max(8, Math.min(p.y - 12, cy.height() - 130))}px`;
   dica.hidden = false;
 }
 
-function limparHover() {
-  if (!estado.cy) return;
-  estado.cy.elements().removeClass("hover-apagado hover-vizinho hover-aresta hover-foco");
-  $("#dica-rede").hidden = true;
+function esconderDica() {
+  const dica = $("#dica-rede");
+  if (dica) dica.hidden = true;
 }
 
 /* Layout da visão geral: uma coluna-bloco por estágio da cadeia (profundidade a partir dos
@@ -492,6 +591,7 @@ function destacarConsulta(consulta) {
     guardar(Math.max(nivelDe.get(a.origem), nivelDe.get(a.destino)), cy.getElementById(`${a.origem}->${a.destino}`));
   }
   const sub = porNivel.reduce((acc, c) => (c ? acc.union(c) : acc), cy.collection());
+  soltarTraco();
   cy.batch(() => {
     limparClasses();
     if (!estado.isolado) cy.elements().addClass("apagado");
@@ -726,7 +826,7 @@ function renderIntro() {
     botoes.length
       ? h("section", { class: "grupo" }, h("span", { class: "rotulo" }, "Experimente"), h("div", { class: "exemplos" }, botoes))
       : h("p", { class: "vazio" }, "O banco está vazio. Registre um insumo na aba Registrar ou rode python -m rastro seed."),
-    h("p", { class: "ajuda" }, "Dica: passe o mouse sobre um lote na rede para ver o que ele é e acender só as ligações dele.")
+    h("p", { class: "ajuda" }, "Dica: passe o mouse sobre os lotes da rede para ver a rastreabilidade de cada um: em verde, de onde veio; em vermelho, para onde foi. Clique para fixar e ver os detalhes.")
   );
 }
 
@@ -758,6 +858,8 @@ async function focar(id) {
 }
 
 async function selecionar(id) {
+  // a rastreabilidade do lote clicado fica fixa enquanto o painel estiver aberto
+  fixarTraco(id);
   let v;
   try {
     v = await api(`/api/vertices/${encodeURIComponent(id)}`);
@@ -771,26 +873,57 @@ async function selecionar(id) {
     ["Registrado em", fmtData.format(new Date(v.criado_em))],
     ...atributos.map(([chave, valor]) => [chave[0].toUpperCase() + chave.slice(1), String(valor)]),
     v.evento_id ? ["Evento", `#${v.evento_id}`] : null,
+    ["Na cadeia", [h("span", { class: "antes" }, `${v.antes} antes`), " · ", h("span", { class: "depois" }, `${v.depois} depois`)]],
   ].filter(Boolean);
 
-  const chips = (arestas, lado) =>
-    arestas.length
+  const ligacoes = (lista) =>
+    lista.length
       ? h(
-          "div",
-          { class: "chips" },
-          arestas.map((a) => h("button", { class: "chip mono", type: "button", onclick: () => focar(a[lado]) }, a[lado]))
+          "ul",
+          { class: "ligacoes" },
+          lista.map((a) =>
+            h(
+              "li",
+              {},
+              h(
+                "button",
+                { type: "button", onclick: () => focar(a.vizinho.id) },
+                etiqueta(a.vizinho.id, a.vizinho.tipo),
+                h("span", { class: "nome" }, a.vizinho.nome),
+                a.vizinho.extra ? h("span", { class: "sub" }, a.vizinho.extra) : null
+              )
+            )
+          )
         )
       : h("p", { class: "vazio" }, "nenhuma");
+
+  // de quem veio: para um insumo, o fornecedor (já nos fatos); para os demais, os fornecedores da origem
+  const n = v.fornecedores_origem.length;
+  const deQuemVeio =
+    v.tipo === "insumo"
+      ? null
+      : h(
+          "div",
+          { class: "grupo" },
+          h("span", { class: "rotulo" }, v.tipo === "destino" ? `Fornecedores do que recebeu (${n})` : `De quem veio (${n} ${n === 1 ? "fornecedor" : "fornecedores"})`),
+          n ? h("ul", { class: "fornecedores" }, v.fornecedores_origem.map((f) => h("li", {}, f))) : h("p", { class: "vazio" }, "nenhum fornecedor registrado")
+        );
 
   const ehDestino = v.tipo === "destino";
   const painel = $("#detalhe");
   painel.replaceChildren(
-    h("button", { class: "fechar", type: "button", "aria-label": "Fechar", onclick: fecharDetalhe }, "×"),
-    h("span", { class: "pilula" }, NOME_TIPO[v.tipo]),
+    h(
+      "div",
+      { class: "arrastar", title: "Arraste para mover" },
+      h("span", { class: "pilula" }, NOME_TIPO[v.tipo]),
+      h("span", { class: "alca", "aria-hidden": "true" }, "⋮⋮"),
+      h("button", { class: "fechar", type: "button", "aria-label": "Fechar", onclick: fecharDetalhe }, "×")
+    ),
     h("h2", {}, etiqueta(v.id, v.tipo), " ", v.nome),
     h("dl", { class: "fatos" }, fatos.map(([dt, dd]) => [h("dt", {}, dt), h("dd", {}, dd)])),
-    h("div", { class: "grupo" }, h("span", { class: "rotulo" }, `Entradas (${v.entradas.length})`), chips(v.entradas, "origem")),
-    h("div", { class: "grupo" }, h("span", { class: "rotulo" }, `Saídas (${v.saidas.length})`), chips(v.saidas, "destino")),
+    deQuemVeio,
+    h("div", { class: "grupo" }, h("span", { class: "rotulo" }, `Entradas (${v.entradas.length})`), ligacoes(v.entradas)),
+    h("div", { class: "grupo" }, h("span", { class: "rotulo" }, `Saídas (${v.saidas.length})`), ligacoes(v.saidas)),
     h(
       "div",
       { class: "botoes" },
@@ -801,11 +934,58 @@ async function selecionar(id) {
     )
   );
   painel.hidden = false;
+  manterPainelDentro();
 }
 
 function fecharDetalhe() {
   $("#detalhe").hidden = true;
   estado.cy.elements().unselect();
+  soltarTraco();
+}
+
+// O painel de detalhes é solto: arrastando pela faixa do topo, ele vai para qualquer ponto da rede.
+function areaDoPainel(painel) {
+  if (getComputedStyle(painel).position === "fixed") return { left: 0, top: 0, width: innerWidth, height: innerHeight };
+  return $(".palco").getBoundingClientRect();
+}
+
+function posicionarPainel(painel, x, y) {
+  const area = areaDoPainel(painel);
+  const maxX = Math.max(0, area.width - painel.offsetWidth);
+  const maxY = Math.max(0, area.height - painel.offsetHeight);
+  painel.style.left = `${Math.min(Math.max(0, x), maxX)}px`;
+  painel.style.top = `${Math.min(Math.max(0, y), maxY)}px`;
+  painel.style.right = "auto";
+  painel.style.bottom = "auto";
+}
+
+function manterPainelDentro() {
+  const painel = $("#detalhe");
+  if (painel.style.left) posicionarPainel(painel, parseFloat(painel.style.left), parseFloat(painel.style.top));
+}
+
+function ativarArraste() {
+  const painel = $("#detalhe");
+  let arraste = null;
+  painel.addEventListener("pointerdown", (evento) => {
+    if (!evento.target.closest(".arrastar") || evento.target.closest("button")) return;
+    const caixa = painel.getBoundingClientRect();
+    arraste = { dx: evento.clientX - caixa.left, dy: evento.clientY - caixa.top, area: areaDoPainel(painel) };
+    painel.setPointerCapture(evento.pointerId);
+    painel.classList.add("arrastando");
+    evento.preventDefault();
+  });
+  painel.addEventListener("pointermove", (evento) => {
+    if (!arraste) return;
+    posicionarPainel(painel, evento.clientX - arraste.area.left - arraste.dx, evento.clientY - arraste.area.top - arraste.dy);
+  });
+  const soltar = () => {
+    arraste = null;
+    painel.classList.remove("arrastando");
+  };
+  painel.addEventListener("pointerup", soltar);
+  painel.addEventListener("pointercancel", soltar);
+  addEventListener("resize", manterPainelDentro);
 }
 
 async function abrirVizinhanca(id) {
@@ -1051,6 +1231,7 @@ function ligarEventos() {
   $("#btn-limpar").addEventListener("click", limparDestaque);
   $("#btn-isolar").addEventListener("click", alternarIsolamento);
   $("#btn-ajustar").addEventListener("click", () => enquadrar());
+  ativarArraste();
   $("#btn-nova-base").addEventListener("click", () => {
     $("#retorno-base").replaceChildren();
     $("#dialogo-base").showModal();

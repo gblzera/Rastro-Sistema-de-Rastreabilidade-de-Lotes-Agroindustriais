@@ -128,10 +128,18 @@ def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] 
     def detalhar_vertice(vertice_id: str, servico: ServicoRastro = Servico):
         with servico.leitura() as g:
             v = g.vertice(vertice_id)
+            origem = g.origem(vertice_id)
+            fornecedores = {
+                g.vertice(i).atributos.get("fornecedor") for i in origem.por_tipo[TipoVertice.INSUMO]
+            }
             return {
                 **_vertice(g, v),
-                "entradas": [_aresta(a) for a in g.arestas_entrada(vertice_id)],
-                "saidas": [_aresta(a) for a in g.arestas_saida(vertice_id)],
+                "entradas": [{**_aresta(a), "vizinho": _resumo(g.vertice(a.origem))} for a in g.arestas_entrada(vertice_id)],
+                "saidas": [{**_aresta(a), "vizinho": _resumo(g.vertice(a.destino))} for a in g.arestas_saida(vertice_id)],
+                # "de quem veio": os fornecedores dos lotes de insumo que estão na origem deste vértice
+                "fornecedores_origem": sorted(f for f in fornecedores if f),
+                "antes": origem.total_vertices - 1,
+                "depois": g.recall(vertice_id).total_vertices - 1,
             }
 
     @app.get("/api/consultas/{tipo}/{vertice_id}", response_model=e.ConsultaOut, tags=["consultas"])
@@ -191,9 +199,6 @@ def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] 
         """Lotes que rendem boas demonstrações: o recall mais amplo entre os lotes de leite cru,
         a origem mais rica entre os produtos finais e um vínculo que fecharia ciclo."""
         with servico.leitura() as g:
-            def resumo(v: Vertice) -> dict:
-                return {"id": v.id, "nome": v.nome, "extra": v.atributos.get("fornecedor") or v.atributos.get("cidade")}
-
             insumos = [v for v in g.vertices(TipoVertice.INSUMO) if v.nome == "Leite cru"]
             insumos = (insumos or list(g.vertices(TipoVertice.INSUMO)))[:80]
             produtos = list(g.vertices(TipoVertice.PRODUTO_FINAL))[:80]
@@ -207,12 +212,12 @@ def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] 
                     (p for p in g.predecessores(produto.id) if g.vertice(p).tipo is TipoVertice.INTERMEDIARIO), None
                 )
                 if ingrediente:
-                    ciclo = {"origem": resumo(produto), "destino": resumo(g.vertice(ingrediente))}
+                    ciclo = {"origem": _resumo(produto), "destino": _resumo(g.vertice(ingrediente))}
                     break
             return {
-                "recall": resumo(recall) if recall else None,
+                "recall": _resumo(recall) if recall else None,
                 "recall_produtos": len(g.recall(recall.id).por_tipo[TipoVertice.PRODUTO_FINAL]) if recall else 0,
-                "origem": resumo(origem) if origem else None,
+                "origem": _resumo(origem) if origem else None,
                 "ciclo": ciclo,
             }
 
@@ -293,6 +298,10 @@ def _registro(dados: e._Registro) -> dict:
 def _texto_busca(v: Vertice) -> str:
     extras = " ".join(str(valor) for valor in v.atributos.values())
     return f"{v.id} {v.nome} {extras}".casefold()
+
+
+def _resumo(v: Vertice) -> dict:
+    return {"id": v.id, "nome": v.nome, "tipo": v.tipo, "extra": v.atributos.get("fornecedor") or v.atributos.get("cidade")}
 
 
 def _vertice(g: GrafoRastro, v: Vertice) -> dict:

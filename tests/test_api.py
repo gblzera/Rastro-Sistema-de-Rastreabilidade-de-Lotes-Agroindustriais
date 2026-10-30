@@ -49,7 +49,16 @@ def test_fluxo_completo_de_registro_e_consultas(cliente):
 
     detalhe = cliente.get(f"/api/vertices/{c['queijo']['id']}").json()
     assert {a["origem"] for a in detalhe["entradas"]} == {c["pasteurizado"]["id"], c["sal"]["id"]}
+    assert {a["vizinho"]["nome"] for a in detalhe["entradas"]} == {"Leite pasteurizado", "Sal refinado"}
     assert detalhe["saidas"][0]["tipo"] == "expedicao"
+    assert detalhe["saidas"][0]["vizinho"] == {
+        "id": c["mercado"]["id"], "nome": "Supermercado Central", "tipo": "destino", "extra": "Asa Norte/DF",
+    }
+    # de quem veio: o fornecedor do leite cru que está na origem do queijo
+    assert detalhe["fornecedores_origem"] == ["Fazenda Santa Luzia"]
+    assert (detalhe["antes"], detalhe["depois"]) == (3, 1)
+    insumo = cliente.get(f"/api/vertices/{c['leite']['id']}").json()
+    assert insumo["fornecedores_origem"] == ["Fazenda Santa Luzia"] and insumo["antes"] == 0
 
     estat = cliente.get("/api/estatisticas").json()
     assert estat["vertices"] == 5 and estat["arestas"] == 4
@@ -171,8 +180,8 @@ def test_exemplos_apontam_para_lotes_uteis(cliente):
     assert ex["recall"]["id"] == c["leite"]["id"] and ex["recall_produtos"] == 1
     assert ex["origem"]["id"] == c["queijo"]["id"]
     assert ex["ciclo"] == {
-        "origem": {"id": c["queijo"]["id"], "nome": "Queijo minas frescal", "extra": None},
-        "destino": {"id": c["pasteurizado"]["id"], "nome": "Leite pasteurizado", "extra": None},
+        "origem": {"id": c["queijo"]["id"], "nome": "Queijo minas frescal", "tipo": "produto_final", "extra": None},
+        "destino": {"id": c["pasteurizado"]["id"], "nome": "Leite pasteurizado", "tipo": "intermediario", "extra": None},
     }
     # o vínculo sugerido realmente fecha um ciclo
     r = cliente.post("/api/vinculos", json={"origem": ex["ciclo"]["origem"]["id"], "destino": ex["ciclo"]["destino"]["id"]})

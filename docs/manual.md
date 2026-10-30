@@ -17,7 +17,11 @@ Pacote 1.6.1 da EAP. Este manual descreve a interface web. Para instalar e subir
 
 ![Tela inicial com o guia de uso e a rede por estágios](img/inicio.jpg)
 
-Passe o mouse sobre um lote para ver um cartão com código, produto e fornecedor ou cidade; a rede acende só esse lote, seus vizinhos diretos e as ligações entre eles. Use a roda do mouse (ou pinça no celular) para aproximar; os códigos aparecem conforme o zoom aumenta. **Ver tudo** volta a enquadrar a rede inteira. Clicar em um vértice abre o painel de detalhe com quantidade, fornecedor ou cidade, as arestas de entrada e de saída e atalhos para consultas.
+**Rastreabilidade ao passar o mouse.** A rede mostra a cadeia completa do lote mais próximo do cursor: em verde, tudo de onde ele veio; em vermelho, tudo para onde ele foi. Um cartão mostra o código, o produto e os fornecedores de origem. Ao descer o mouse por uma coluna, a rastreabilidade passa de um lote para o outro; longe de qualquer lote, ela apaga.
+
+**Clique para fixar.** Clicar num lote fixa a rastreabilidade dele e abre o painel de detalhes. Enquanto o painel estiver aberto, passar o mouse sobre outros lotes só mostra o cartão. O painel é solto: arraste-o pela faixa do topo para qualquer ponto da rede. Ele mostra quantidade, data, evento, quantos vértices há antes e depois na cadeia, **De quem veio** (os fornecedores dos insumos na origem do lote) e as entradas e saídas com código e nome. Clicar numa entrada ou saída leva a esse lote. Fechar o painel (×) ou clicar numa área vazia solta a rastreabilidade.
+
+Use a roda do mouse (ou pinça no celular) para aproximar; os códigos aparecem conforme o zoom aumenta. **Ver tudo** volta a enquadrar a rede inteira.
 
 Quando a base tem mais de 1 500 vértices, a rede mostra os destinos e os lotes mais recentes, e uma faixa avisa quantos estão visíveis. Consultas, a busca e o botão *Vizinhança* abrem qualquer parte do grafo.
 

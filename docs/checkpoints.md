@@ -22,7 +22,7 @@ Pacote 1.1.3 da EAP. Situação em 30/10/2026, data do Checkpoint 5.
 | 1.4.3 | Destaque do subgrafo nas consultas | CP4 (23/10) | Concluído (adiantado) | `web/app.js` |
 | 1.5.3 | Testes de carga no grafo | CP4 (23/10) | Concluído (adiantado) | `rastro/benchmark.py`, [resultados](testes-de-carga.md) |
 | 1.4.4 | Refinamento visual da rede | CP5 (30/10) | Concluído | `web/`: estágios com título, consultas isoladas e animadas por nível da BFS, foco ao passar o mouse, guia de uso |
-| 1.5.1 | Testes automatizados | CP5 (30/10) | Concluído: 75 testes (91 execuções com PostgreSQL), CI em Python 3.9 e 3.12 | `tests/`, `.github/workflows/testes.yml` |
+| 1.5.1 | Testes automatizados | CP5 (30/10) | Concluído: 76 testes (93 execuções com PostgreSQL), CI em Python 3.9 e 3.12 | `tests/`, `.github/workflows/testes.yml` |
 | 1.6.1 | Manual de uso | CP5 (30/10) | Concluído | [manual](manual.md) |
 | 1.6.2 | Implantação da aplicação | CP5 (30/10) | Concluído: publicada em [rastro-wo9d.onrender.com](https://rastro-wo9d.onrender.com) | `render.yaml`, [guia de implantação](implantacao.md) |
 | 1.6.3 | Seminário com demonstração ao vivo | 03/11–20/11 | Roteiro pronto | roteiro abaixo |

@@ -507,3 +507,17 @@ input::placeholder { color: var(--ink-3); }
 .dica-rede .pilula { justify-self: start; }
 .dica-rede span { color: var(--ink-2); }
 .dica-rede .sub { color: var(--ink-3); font-size: 0.78rem; }
+
+/* diálogo de gerar um grafo novo */
+dialog {
+  width: min(480px, calc(100% - 32px));
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--sombra);
+}
+dialog::backdrop { background: rgb(10 20 14 / 45%); }
+dialog form { display: grid; gap: 12px; }
+.linha-base { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

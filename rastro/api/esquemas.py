@@ -65,6 +65,12 @@ class VinculoIn(_Registro):
     quantidade: Optional[float] = Quantidade
 
 
+class NovaBaseIn(_Base):
+    lotes: int = Field(default=300, ge=20, le=2000)
+    destinos: int = Field(default=12, ge=1, le=50)
+    semente: Optional[int] = Field(default=None, ge=0, le=2_147_483_647, description="Padrão: aleatória")
+
+
 class VerticeOut(BaseModel):
     id: str
     tipo: TipoVertice

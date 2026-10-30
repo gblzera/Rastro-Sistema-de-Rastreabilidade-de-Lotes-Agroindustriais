@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import random
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal, Optional
@@ -220,6 +221,13 @@ def criar_app(servico: Optional[ServicoRastro] = None, url_banco: Optional[str] 
         return servico.repo.listar_eventos(limite)
 
     # ------------------------------------------------------------- escrita
+
+    @app.post("/api/base/gerar", status_code=201, tags=["sistema"])
+    def gerar_nova_base(dados: e.NovaBaseIn, servico: ServicoRastro = Servico):
+        """Apaga todos os registros e gera uma base sintética nova. Sem semente, sorteia uma;
+        com a mesma semente, o grafo gerado é sempre o mesmo."""
+        semente = dados.semente if dados.semente is not None else random.randint(1, 99_999)
+        return servico.regenerar(n_lotes=dados.lotes, n_destinos=dados.destinos, semente=semente)
 
     @app.post("/api/insumos", response_model=e.VerticeOut, status_code=201, tags=["registro"])
     def receber_insumo(dados: e.InsumoIn, servico: ServicoRastro = Servico):

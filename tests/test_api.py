@@ -192,3 +192,34 @@ def test_interface_web_e_servida(cliente):
     resposta = cliente.get("/")
     assert resposta.status_code == 200
     assert "Rastro" in resposta.text
+
+
+def test_gerar_nova_base(cliente):
+    _cadeia_basica(cliente)
+
+    def arestas():
+        return sorted((a["origem"], a["destino"]) for a in cliente.get("/api/grafo").json()["arestas"])
+
+    r = _post(cliente, "/api/base/gerar", {"lotes": 120, "destinos": 5, "semente": 7})
+    assert (r["semente"], r["lotes"], r["vertices"]) == (7, 120, 125)
+    # os registros anteriores foram substituídos pela base nova
+    assert cliente.get("/api/estatisticas").json()["vertices"] == 125
+    primeira = arestas()
+
+    # mesma semente, mesmo grafo; outra semente, outro grafo
+    _post(cliente, "/api/base/gerar", {"lotes": 120, "destinos": 5, "semente": 7})
+    assert arestas() == primeira
+    _post(cliente, "/api/base/gerar", {"lotes": 120, "destinos": 5, "semente": 8})
+    assert arestas() != primeira
+
+    # sem semente, uma é sorteada e devolvida
+    sorteada = _post(cliente, "/api/base/gerar", {"lotes": 60})
+    assert isinstance(sorteada["semente"], int) and sorteada["lotes"] == 60
+
+    # limites de tamanho
+    assert cliente.post("/api/base/gerar", json={"lotes": 5}).status_code == 422
+    assert cliente.post("/api/base/gerar", json={"lotes": 5000}).status_code == 422
+
+    # o sistema continua funcionando normalmente depois de gerar
+    assert cliente.get("/api/consultas/recall/INS-000001").status_code == 200
+    _post(cliente, "/api/insumos", {"nome": "Leite cru"})

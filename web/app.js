@@ -1005,6 +1005,38 @@ function ativarAutocompletar() {
 
 // ------------------------------------------------------------------ início
 
+// ------------------------------------------------------------------ gerar um grafo novo
+
+async function gerarNovaBase(evento) {
+  const dialogo = $("#dialogo-base");
+  if (evento.submitter?.value === "cancelar") return; // o form method="dialog" fecha sozinho
+  evento.preventDefault();
+  const botao = $("#form-base button[value=gerar]");
+  const semente = $("#base-semente").value.trim();
+  const corpo = { lotes: Number($("#base-lotes").value), destinos: Number($("#base-destinos").value) };
+  if (semente) corpo.semente = Number(semente);
+  botao.disabled = true;
+  botao.textContent = "Gerando…";
+  try {
+    const r = await api("/api/base/gerar", { method: "POST", corpo });
+    dialogo.close();
+    esconderBotoesDestaque();
+    fecharDetalhe();
+    mostrarAba("consultar");
+    await Promise.all([carregarRede(), carregarIndicadores(), carregarDestinos(), carregarExemplos()]);
+    renderIntro();
+    mostrarFaixa(
+      `Grafo novo: ${fmtNumero.format(r.lotes)} lotes, ${fmtNumero.format(r.arestas)} arestas, semente ${r.semente}, ` +
+        `gerado em ${fmtMs(r.tempo_ms)}. A mesma semente recria exatamente este grafo.`
+    );
+  } catch (erro) {
+    $("#retorno-base").replaceChildren(h("div", { class: "aviso" }, h("strong", {}, "Não foi possível gerar"), erro.message));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Gerar grafo";
+  }
+}
+
 function ligarEventos() {
   for (const aba of $$(".abas button")) aba.addEventListener("click", () => mostrarAba(aba.id.replace("aba-", "")));
   for (const botao of $$(".segmentos button")) botao.addEventListener("click", () => mostrarFormulario(botao.dataset.form));
@@ -1019,6 +1051,11 @@ function ligarEventos() {
   $("#btn-limpar").addEventListener("click", limparDestaque);
   $("#btn-isolar").addEventListener("click", alternarIsolamento);
   $("#btn-ajustar").addEventListener("click", () => enquadrar());
+  $("#btn-nova-base").addEventListener("click", () => {
+    $("#retorno-base").replaceChildren();
+    $("#dialogo-base").showModal();
+  });
+  $("#form-base").addEventListener("submit", gerarNovaBase);
   $("#busca-rede").addEventListener("change", async (evento) => {
     const id = evento.target.value.trim();
     if (!id) return;

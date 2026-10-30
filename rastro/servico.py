@@ -35,6 +35,7 @@ from .grafo import (
 )
 from .grafo.modelo import agora
 from .persistencia import Repositorio
+from .sintetico import gerar_base
 
 _PADRAO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$")
 
@@ -75,6 +76,27 @@ class ServicoRastro:
                 prefixo, _, numero = vertice.id.partition("-")
                 if numero.isdigit():
                     self._contadores[prefixo] = max(self._contadores.get(prefixo, 0), int(numero))
+
+    def regenerar(self, *, n_lotes: int, n_destinos: int, semente: int) -> dict:
+        """Apaga todos os registros e cria uma base sintética nova (demonstrações).
+
+        A mesma semente gera sempre o mesmo grafo; outra semente gera outro.
+        """
+        base = gerar_base(n_lotes, n_destinos, semente)
+        with self._lock:
+            inicio = time.perf_counter()
+            self.repo.apagar_esquema()
+            self.repo.criar_esquema()
+            self.repo.inserir_base(base)
+            self.iniciar()
+            return {
+                "semente": semente,
+                "lotes": base.num_lotes,
+                "destinos": n_destinos,
+                "vertices": self.grafo.num_vertices,
+                "arestas": self.grafo.num_arestas,
+                "tempo_ms": round((time.perf_counter() - inicio) * 1000, 1),
+            }
 
     # ---------------------------------------------------------------- escrita
 

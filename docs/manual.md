@@ -74,6 +74,16 @@ Nenhum registro recusado deixa dados parciais: o evento, o lote e as arestas sã
 
 ![Vínculo recusado por criar ciclo](img/ciclo-recusado.jpg)
 
+## Gerar um grafo novo
+
+O botão **Gerar novo grafo**, no topo da tela, cria uma base sintética nova: o simulador recebe insumos dos fornecedores, produz intermediários e produtos finais pelas receitas e expede para os clientes, dia após dia, até chegar ao número de lotes pedido.
+
+- **Lotes** (20 a 2 000) e **Destinos** (1 a 50) definem o tamanho.
+- **Semente** em branco sorteia uma: cada geração cria um grafo diferente. Uma semente informada recria sempre exatamente o mesmo grafo, o que permite repetir uma demonstração.
+- Todos os registros atuais são apagados. A faixa no topo da rede mostra a semente usada.
+
+Recarregar a página (F5) **não** muda o grafo: a página apenas busca de novo o grafo que está no servidor. O grafo só muda quando alguém registra um evento ou gera uma base nova.
+
 ## Eventos
 
 A aba **Eventos** lista os últimos registros (recebimento, produção, expedição, ajuste) com data, descrição e os lotes ou ligações que cada um criou. Clique em um código para localizá-lo na rede.

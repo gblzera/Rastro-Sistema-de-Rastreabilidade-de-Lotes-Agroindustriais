@@ -95,6 +95,8 @@ Detalhes do modelo e dos algoritmos estão em [docs/modelagem.md](docs/modelagem
 | GET | `/api/vertices` · `/api/vertices/{id}` | Busca e detalhe de lotes |
 | GET | `/api/grafo` · `/api/grafo/vizinhanca/{id}` | Grafo para visualização |
 | GET | `/api/estatisticas` · `/api/eventos` · `/api/saude` | Indicadores, histórico e status |
+| GET | `/api/exemplos` | Lotes sugeridos para demonstração (recall, origem e um ciclo) |
+| POST | `/api/base/gerar` | Apaga os registros e gera uma base sintética nova (`lotes`, `destinos`, `semente` opcional) |
 
 ## Andamento (EAP)
 

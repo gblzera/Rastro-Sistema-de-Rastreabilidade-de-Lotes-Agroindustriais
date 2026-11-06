@@ -79,7 +79,7 @@ flowchart LR
 | `web/` | Interface (HTML/CSS/JS sem build; bibliotecas em `web/vendor` para a demo funcionar offline) |
 | `docs/` | Modelagem, testes de carga, manual de uso e acompanhamento dos checkpoints |
 
-Detalhes do modelo e dos algoritmos estão em [docs/modelagem.md](docs/modelagem.md).
+Detalhes do modelo e dos algoritmos estão em [docs/modelagem.md](docs/modelagem.md); o porquê de cada escolha, em [docs/decisoes.md](docs/decisoes.md).
 
 ## API
 
